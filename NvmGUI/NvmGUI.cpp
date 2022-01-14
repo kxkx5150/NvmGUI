@@ -109,7 +109,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: HDC を使用する描画コードをここに追加してください...
             EndPaint(hWnd, &ps);
         }
         break;
@@ -118,6 +117,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_mainhwnd = hWnd;
             g_nvm = new Nvm(hWnd, hInst);
             g_nvm->download_available_list(L"https://nodejs.org/dist/index.json");
+            OutputDebugString(L"");
         } break;
 
     case WM_DESTROY:
