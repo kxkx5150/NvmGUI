@@ -5,19 +5,24 @@
 #define IDS_APP_TITLE			103
 
 #define IDR_MAINFRAME			128
-#define IDD_NVMGUI_DIALOG	102
+#define IDD_NVMGUI_DIALOG		102
 #define IDD_ABOUTBOX			103
 #define IDM_ABOUT				104
 #define IDM_EXIT				105
-#define IDI_NVMGUI			107
+#define IDI_NVMGUI				107
 #define IDI_SMALL				108
-#define IDC_NVMGUI			109
+#define IDC_NVMGUI				109
+#define IDC_DL_COMBOBOX			1000
+#define IDC_DL_BUTTON			1001
+#define IDC_DL_LISTVIEW			1002
+
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
 #endif
-// 新しいオブジェクトの次の既定値
-//
+
+
+
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 

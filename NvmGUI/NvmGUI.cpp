@@ -6,7 +6,6 @@
 #define MAX_LOADSTRING 100
 
 HWND g_mainhwnd = nullptr;
-Nvm* g_nvm = nullptr;
 HINSTANCE hInst;
 WCHAR szTitle[MAX_LOADSTRING];
 WCHAR szWindowClass[MAX_LOADSTRING];
@@ -66,7 +65,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     hInst = hInstance; // グローバル変数にインスタンス ハンドルを格納する
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, 
         WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX,
-        CW_USEDEFAULT, 0, 700, 400, 
+        CW_USEDEFAULT, 0, 420, 600, 
         nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd) {
@@ -103,9 +102,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_CREATE: {
         g_mainhwnd = hWnd;
-        g_nvm = new Nvm(hWnd, hInst);
-        g_nvm->create_control();
-        g_nvm->download_available_list();
+        Nvm* nvm = nullptr;
+        nvm = new Nvm(hWnd, hInst);
+        nvm->create_control();
+        nvm->download_available_list();
     } break;
 
     case WM_DESTROY:
