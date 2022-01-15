@@ -38,5 +38,6 @@ private:
     BOOL remove_dir(bool x86 = false);
 
     BOOL ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath);
-    BOOL Unzip2Folder(const TCHAR* ZipPath, const TCHAR* OutPath);
 };
+
+

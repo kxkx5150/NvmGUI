@@ -28,6 +28,8 @@ class Nvm {
     std::vector<Node*> m_lts_nodes;
     std::vector<Node*> m_sec_nodes;
     std::vector<Node*> m_lts_sec_nodes;
+    std::vector<Node*> m_current_dllist;
+
 
     std::wstring m_json_url = L"https://nodejs.org/dist/index.json";
 
@@ -47,13 +49,14 @@ public:
     void clear_nodes();
 
     void click_dllist_btn();
+    void click_dlinstall_btn();
 
 private:
     HFONT create_font(int fontsize);
     void set_font();
     HWND create_listview(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
 
-    void create_listview_items(std::vector<Node*> nodes);
+    void create_dllistview_items(std::vector<Node*> nodes);
     void create_listview_item(HWND lstvhwnd, Node* node, int idx, const TCHAR* arch);
     HWND create_combobox(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
     HWND create_button(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);

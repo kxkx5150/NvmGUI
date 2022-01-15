@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DownloadProgress.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Node.h" />
     <ClInclude Include="Nvm.h" />

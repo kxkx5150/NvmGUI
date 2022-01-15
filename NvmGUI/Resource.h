@@ -12,9 +12,10 @@
 #define IDI_NVMGUI				107
 #define IDI_SMALL				108
 #define IDC_NVMGUI				109
-#define IDC_DL_COMBOBOX			1000
-#define IDC_DL_BUTTON			1001
-#define IDC_DL_LISTVIEW			1002
+#define IDC_DL_COMBOBOX			1001
+#define IDC_DL_BUTTON			1002
+#define IDC_DL_LISTVIEW			1003
+#define IDC_DL_INSTALL			1004
 
 #define IDC_MYICON				2
 #ifndef IDC_STATIC

@@ -1,4 +1,5 @@
 #include "Node.h"
+#include "DownloadProgress.h"
 #include <shlobj.h>
 #pragma comment(lib, "shell32.lib")
 #include <Shellapi.h>
@@ -75,11 +76,17 @@ void Node::download_node(bool x86)
 
     std::wstring url = get_download_url();
     std::wstring path = get_store_path();
-    HRESULT res = URLDownloadToFile(NULL, url.c_str(), path.c_str(), 0, NULL);
+
+    OutputDebugString(L"start-----------");
+    DownloadProgress progress;
+    HRESULT res = URLDownloadToFile(NULL, url.c_str(), path.c_str(), 0, 
+        static_cast<IBindStatusCallback*>(&progress));
 
     if (res == S_OK) {
         OutputDebugString(L"Ok\n");
         ExtractZip(path.c_str(), m_root_dir.c_str());
+        DeleteFile(path.c_str());
+        OutputDebugString(L"end-----------");
 
     } else if (res == E_OUTOFMEMORY) {
         OutputDebugString(L"Buffer length invalid, or insufficient memory\n");
@@ -92,7 +99,7 @@ void Node::download_node(bool x86)
 BOOL Node::ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
 {
     IShellDispatch* pShellDisp;
-    CoInitializeEx(0, COINIT_MULTITHREADED);
+    HRESULT hres = CoInitializeEx(0, COINIT_MULTITHREADED);
     HRESULT hr = CoCreateInstance(CLSID_Shell, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pShellDisp));
     if (FAILED(hr)) {
         CoUninitialize();
@@ -154,87 +161,6 @@ BOOL Node::ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
     CoUninitialize();
 
     return TRUE;
-}
-BOOL Node::Unzip2Folder(const TCHAR* ZipPath, const TCHAR* OutPath)
-{
-    BSTR lpZipFile = SysAllocString(ZipPath);
-    BSTR lpFolder = SysAllocString(OutPath);
-
-    IShellDispatch* pISD;
-
-    Folder* pZippedFile = 0L;
-    Folder* pDestination = 0L;
-
-    long FilesCount = 0;
-    IDispatch* pItem = 0L;
-    FolderItems* pFilesInside = 0L;
-
-    VARIANT Options, OutFolder, InZipFile, Item;
-    CoInitialize(NULL);
-    __try {
-        if (CoCreateInstance(CLSID_Shell, NULL, CLSCTX_INPROC_SERVER, IID_IShellDispatch, (void**)&pISD) != S_OK)
-            return 1;
-
-        InZipFile.vt = VT_BSTR;
-        InZipFile.bstrVal = lpZipFile;
-        pISD->NameSpace(InZipFile, &pZippedFile);
-        if (!pZippedFile) {
-            pISD->Release();
-            return 1;
-        }
-
-        OutFolder.vt = VT_BSTR;
-        OutFolder.bstrVal = lpFolder;
-        pISD->NameSpace(OutFolder, &pDestination);
-        if (!pDestination) {
-            pZippedFile->Release();
-            pISD->Release();
-            return 1;
-        }
-
-        pZippedFile->Items(&pFilesInside);
-        if (!pFilesInside) {
-            pDestination->Release();
-            pZippedFile->Release();
-            pISD->Release();
-            return 1;
-        }
-
-        pFilesInside->get_Count(&FilesCount);
-        if (FilesCount < 1) {
-            pFilesInside->Release();
-            pDestination->Release();
-            pZippedFile->Release();
-            pISD->Release();
-            return 0;
-        }
-
-        pFilesInside->QueryInterface(IID_IDispatch, (void**)&pItem);
-
-        Item.vt = VT_DISPATCH;
-        Item.pdispVal = pItem;
-
-        Options.vt = VT_I4;
-        Options.lVal = 1024 | 512 | 16 | 4; //http://msdn.microsoft.com/en-us/library/bb787866(VS.85).aspx
-
-        bool retval = pDestination->CopyHere(Item, Options) == S_OK;
-
-        pItem->Release();
-        pItem = 0L;
-        pFilesInside->Release();
-        pFilesInside = 0L;
-        pDestination->Release();
-        pDestination = 0L;
-        pZippedFile->Release();
-        pZippedFile = 0L;
-        pISD->Release();
-        pISD = 0L;
-
-        return retval;
-
-    } __finally {
-        CoUninitialize();
-    }
 }
 BOOL Node::installed_check(bool x86)
 {

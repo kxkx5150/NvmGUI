@@ -153,18 +153,25 @@ void Nvm::click_dllist_btn()
     ListView_DeleteAllItems(m_dl_listview);
     int idx = SendMessage(m_dl_combobox, CB_GETCURSEL, 0, 0);
     if (idx == 1) {
-        create_listview_items(m_nodes);
+        create_dllistview_items(m_nodes);
     } else if (idx == 2) {
-        create_listview_items(m_lts_nodes);
+        create_dllistview_items(m_lts_nodes);
 
     } else if (idx == 3) {
-        create_listview_items(m_sec_nodes);
+        create_dllistview_items(m_sec_nodes);
 
     } else if (idx == 4) {
-        create_listview_items(m_lts_sec_nodes);
+        create_dllistview_items(m_lts_sec_nodes);
     }
 }
-
+void Nvm::click_dlinstall_btn()
+{
+    int idx = ListView_GetNextItem(m_dl_listview, -1, LVNI_SELECTED);
+    if (idx != -1) {
+        int lstidx = idx / 2;
+        m_current_dllist[lstidx]->download_node(idx % 2);
+    }
+}
 HFONT Nvm::create_font(int fontsize)
 {
     return CreateFont(fontsize, 0, 0, 0,
@@ -226,11 +233,13 @@ HWND Nvm::create_listview(HWND hParent, int nX, int nY, int nWidth, int nHeight,
 
     return hwnd;
 }
-void Nvm::create_listview_items(std::vector<Node*> nodes)
+void Nvm::create_dllistview_items(std::vector<Node*> nodes)
 {
+    m_current_dllist.clear();
     for (int i = 0; i < nodes.size(); i++) {
         create_listview_item(m_dl_listview, nodes[i], i * 2, L"x64");
         create_listview_item(m_dl_listview, nodes[i], i * 2 + 1, L"x86");
+        m_current_dllist.push_back(nodes[i]);
     }
 }
 void Nvm::create_listview_item(HWND lstvhwnd, Node* node, int idx, const TCHAR* arch)
@@ -287,7 +296,10 @@ void Nvm::create_control()
     m_dl_combobox = create_combobox(m_hwnd, 2, 8, 200, 200, IDC_DL_COMBOBOX);
     m_dl_get_btn = create_button(m_hwnd, 206, 7, 80, 24, IDC_DL_BUTTON, L"Get List");
     m_dl_listview = create_listview(m_hwnd, 2, 38, 400, 200, IDC_DL_LISTVIEW);
-    m_dl_install_btn = create_button(m_hwnd, 98, 246, 200, 40, IDC_DL_BUTTON, L"Install");
+    m_dl_install_btn = create_button(m_hwnd, 98, 246, 200, 40, IDC_DL_INSTALL, L"Install");
+
+
+
     SetWindowSubclass(m_hwnd, &SubclassWindowProc, 0, 0);
 
     set_font();
@@ -309,6 +321,11 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         case IDC_DL_BUTTON: {
             g_nvm->click_dllist_btn();
         } break;
+
+        case IDC_DL_INSTALL: {
+            g_nvm->click_dlinstall_btn();
+        } break;
+
         }
     } break;
 
