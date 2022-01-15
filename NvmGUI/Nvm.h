@@ -11,8 +11,10 @@ using namespace web::http::client;
 
 class Nvm {
 
-    HWND m_hwnd = nullptr;
     HINSTANCE m_hIns = nullptr;
+    HWND m_hwnd = nullptr;
+    HWND m_dl_listview = nullptr;
+
     std::vector<Node*> m_nodes;
     std::vector<Node*> m_lts_nodes;
     std::vector<Node*> m_sec_nodes;
@@ -29,8 +31,15 @@ public:
 
     void init();
     void download_available_list();
+
+    void create_control();
+
     int get_nodes_len();
     void clear_nodes();
 
 private:
+    HWND create_listview(int nX, int nY, int nWidth, int nHeight, int id);
+
+    void create_listview_items();
+    void create_listview_item(HWND lstvhwnd, Node* node);
 };

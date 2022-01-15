@@ -1,4 +1,5 @@
 ﻿#include "Nvm.h"
+#include <commctrl.h>
 #include <crtdbg.h>
 #include <shlwapi.h>
 
@@ -46,6 +47,7 @@ void Nvm::download_available_list()
         })
         .then([=](json::value jo) {
             parse_available_list(jo);
+            create_listview_items();
             //m_lts_nodes[0]->download_node();
         });
     try {
@@ -121,4 +123,92 @@ void Nvm::parse_available_list(json::value& jsonobj)
 int Nvm::get_nodes_len()
 {
     return m_nodes.size();
+}
+HWND Nvm::create_listview(int nX, int nY, int nWidth, int nHeight, int id)
+{
+    HWND hwnd = CreateWindowEx(0,
+        WC_LISTVIEW, NULL,
+        WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOSORTHEADER | LVS_SINGLESEL,
+        nX, nY, nWidth, nHeight,
+        m_hwnd, (HMENU)id, m_hIns, NULL);
+
+    LVCOLUMN colmod;
+    colmod.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH;
+    colmod.fmt = LVCFMT_LEFT;
+    colmod.cx = 70;
+    colmod.pszText = (LPWSTR)L"Modules";
+    ListView_InsertColumn(hwnd, 0, &colmod);
+
+    LVCOLUMN colsec;
+    colsec.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH;
+    colsec.fmt = LVCFMT_LEFT;
+    colsec.cx = 70;
+    colsec.pszText = (LPWSTR)L"Security";
+    ListView_InsertColumn(hwnd, 0, &colsec);
+
+    LVCOLUMN collts;
+    collts.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH;
+    collts.fmt = LVCFMT_LEFT;
+    collts.cx = 100;
+    collts.pszText = (LPWSTR)L"LTS";
+    ListView_InsertColumn(hwnd, 0, &collts);
+
+    LVCOLUMN colarch;
+    colarch.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH;
+    colarch.fmt = LVCFMT_LEFT;
+    colarch.cx = 50;
+    colarch.pszText = (LPWSTR)L"Arch";
+    ListView_InsertColumn(hwnd, 0, &colarch);
+
+    LVCOLUMN colver;
+    colver.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH;
+    colver.fmt = LVCFMT_LEFT;
+    colver.cx = 200;
+    colver.pszText = (LPWSTR)L"Version";
+    ListView_InsertColumn(hwnd, 0, &colver);
+
+    return hwnd;
+}
+void Nvm::create_listview_items()
+{
+    for (int i = 0; i < m_lts_nodes.size(); i++) {
+        create_listview_item(m_dl_listview, m_lts_nodes[i]);
+    }
+}
+void Nvm::create_listview_item(HWND lstvhwnd, Node* node)
+{
+    LVITEM item = { 0 };
+    item.mask = LVIF_TEXT;
+    for (int i = 0; i < 3; i++) {
+        item.pszText = (LPWSTR)node->m_version.c_str();
+        item.iItem = i;
+        item.iSubItem = 0;
+        ListView_InsertItem(lstvhwnd, &item);
+
+        item.pszText = (LPWSTR)L"x64";
+        item.iItem = i;
+        item.iSubItem = 1;
+        ListView_SetItem(lstvhwnd, &item);
+
+        item.pszText = (LPWSTR)node->m_lts.c_str();
+        item.iItem = i;
+        item.iSubItem = 2;
+        ListView_SetItem(lstvhwnd, &item);
+
+        item.pszText = (LPWSTR)L"";
+        item.iItem = i;
+        item.iSubItem = 3;
+        ListView_SetItem(lstvhwnd, &item);
+
+        item.pszText = (LPWSTR)node->m_modules.c_str();
+        item.iItem = i;
+        item.iSubItem = 4;
+        ListView_SetItem(lstvhwnd, &item);
+    }
+}
+void Nvm::create_control()
+{
+    m_dl_listview = create_listview(0, 0, 700, 400, 555);
+
+    //m_search_listhwnd = create_listbox(m_search_grouphwnd, 5, 44, 311, 155, IDC_SEARCH_LIST);
 }

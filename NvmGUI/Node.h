@@ -3,12 +3,16 @@
 #include <string>
 
 class Node {
-
+public:
     std::wstring m_version = nullptr;
     std::wstring m_npm = nullptr;
     std::wstring m_lts = nullptr;
     bool m_security = false;
     std::wstring m_modules = nullptr;
+
+
+private:
+
     std::wstring m_x86 = L"win-x86.zip";
     std::wstring m_x64 = L"win-x64.zip";
 
