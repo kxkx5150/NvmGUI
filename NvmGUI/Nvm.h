@@ -1,9 +1,9 @@
 #pragma once
-#include <cpprest/http_client.h>
 #include "Node.h"
 #include <Windows.h>
-#include <vector>
+#include <cpprest/http_client.h>
 #include <string>
+#include <vector>
 
 using namespace web;
 using namespace web::http;
@@ -18,24 +18,19 @@ class Nvm {
     std::vector<Node*> m_sec_nodes;
     std::vector<Node*> m_lts_sec_nodes;
 
-
+    std::wstring m_json_url = L"https://nodejs.org/dist/index.json";
 
 public:
-
-
     void parse_available_list(json::value& jsonobj);
-
 
 public:
     Nvm(HWND hwnd, HINSTANCE hInst);
     ~Nvm();
 
-    void download_available_list(const std::wstring& url);
-    int  get_nodes_len();
-    void download_node(Node* node);
+    void init();
+    void download_available_list();
+    int get_nodes_len();
     void clear_nodes();
-
 
 private:
 };
- 

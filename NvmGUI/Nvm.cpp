@@ -1,16 +1,58 @@
-#include "Nvm.h"
+﻿#include "Nvm.h"
 #include <crtdbg.h>
-#include <urlmon.h>
-#pragma comment(lib, "urlmon.lib")
+#include <shlwapi.h>
 
 Nvm::Nvm(HWND hwnd, HINSTANCE hInst)
     : m_hwnd(hwnd)
     , m_hIns(hInst)
 {
+    init();
 }
 Nvm::~Nvm()
 {
     clear_nodes();
+}
+void Nvm::init()
+{
+    TCHAR path[MAX_PATH];
+    GetCurrentDirectory(MAX_PATH, path);
+    wsprintf(path, TEXT("%s\\nodes"), path);
+    if (!PathFileExists(path)) {
+        if (!CreateDirectory(path, NULL)) {
+            OutputDebugString(L"error");
+        }
+    }
+}
+void Nvm::clear_nodes()
+{
+    for (int i = 0; i < m_nodes.size(); i++) {
+        delete m_nodes[i];
+    }
+    m_nodes.clear();
+    m_lts_nodes.clear();
+    m_sec_nodes.clear();
+    m_lts_sec_nodes.clear();
+}
+void Nvm::download_available_list()
+{
+    http_client client(m_json_url);
+    pplx::task<web::http::http_response> resp = client.request(web::http::methods::GET);
+    resp.then([=](pplx::task<web::http::http_response> task) {
+            web::http::http_response response = task.get();
+            if (response.status_code() != status_codes::OK) {
+                throw std::runtime_error("Returned " + std::to_string(response.status_code()));
+            }
+            return response.extract_json();
+        })
+        .then([=](json::value jo) {
+            parse_available_list(jo);
+            //m_lts_nodes[0]->download_node();
+        });
+    try {
+        resp.wait();
+    } catch (const std::exception& e) {
+        _RPTN(_CRT_WARN, "Error exception:%s\n", e.what());
+    }
 }
 void Nvm::parse_available_list(json::value& jsonobj)
 {
@@ -31,6 +73,9 @@ void Nvm::parse_available_list(json::value& jsonobj)
             continue;
 
         if (array[i][L"security"].is_null() || !array[i][L"security"].is_boolean())
+            continue;
+
+        if (array[i][L"modules"].is_null() || !array[i][L"modules"].is_string())
             continue;
 
         if (array[i][L"files"].is_null())
@@ -57,7 +102,8 @@ void Nvm::parse_available_list(json::value& jsonobj)
                 item[L"version"].as_string(),
                 item[L"npm"].as_string(),
                 ltsstr,
-                item[L"security"].as_bool());
+                item[L"security"].as_bool(),
+                item[L"modules"].as_string());
 
             m_nodes.push_back(node);
             if (0 != ltsstr.find(L"false")) {
@@ -70,56 +116,6 @@ void Nvm::parse_available_list(json::value& jsonobj)
                 m_lts_sec_nodes.push_back(node);
             }
         }
-    }
-}
-void Nvm::clear_nodes()
-{
-    for (int i = 0; i < m_nodes.size(); i++) {
-        delete m_nodes[i];
-    }
-    m_nodes.clear();
-    m_lts_nodes.clear();
-    m_sec_nodes.clear();
-    m_lts_sec_nodes.clear();
-}
-void Nvm::download_available_list(const std::wstring& url)
-{
-    http_client client(url);
-    pplx::task<web::http::http_response> resp = client.request(web::http::methods::GET);
-    resp.then([=](pplx::task<web::http::http_response> task) {
-            web::http::http_response response = task.get();
-            if (response.status_code() != status_codes::OK) {
-                throw std::runtime_error("Returned " + std::to_string(response.status_code()));
-            }
-            return response.extract_json();
-        })
-        .then([=](json::value jo) {
-            parse_available_list(jo);
-        });
-    try {
-        resp.wait();
-    } catch (const std::exception& e) {
-        _RPTN(_CRT_WARN, "Error exception:%s\n", e.what());
-    }
-}
-void Nvm::download_node(Node* node)
-{
-    std::wstring url = node->get_download_url();
-    std::wstring fname = node->get_store_filename();
-
-    TCHAR path[MAX_PATH];
-    GetCurrentDirectory(MAX_PATH, path);
-    wsprintf(path, TEXT("%s\\nodes\\%s"), path, fname.c_str());
-    HRESULT res = URLDownloadToFile(NULL, url.c_str(), path, 0, NULL);
-
-    if (res == S_OK) {
-        OutputDebugString(L"Ok\n");
-    } else if (res == E_OUTOFMEMORY) {
-        OutputDebugString(L"Buffer length invalid, or insufficient memory\n");
-    } else if (res == INET_E_DOWNLOAD_FAILURE) {
-        OutputDebugString(L"URL is invalid\n");
-    } else {
-        OutputDebugString(L"Other error:\n");
     }
 }
 int Nvm::get_nodes_len()
