@@ -7,7 +7,7 @@ public:
     std::wstring m_version = nullptr;
     std::wstring m_npm = nullptr;
     std::wstring m_lts = nullptr;
-    bool m_security = false;
+    std::wstring m_security = nullptr;
     std::wstring m_modules = nullptr;
 
 
@@ -21,7 +21,7 @@ private:
     std::wstring m_x64_dir = L"";
 
 public:
-    Node(std::wstring version, std::wstring npm, std::wstring lts, bool security, std::wstring modules);
+    Node(std::wstring version, std::wstring npm, std::wstring lts, std::wstring security, std::wstring modules);
     ~Node();
 
     std::wstring get_download_url(bool x86 = false);

@@ -71,7 +71,7 @@ void Nvm::parse_available_list(json::value& jsonobj)
         if (array[i][L"npm"].is_null() || !array[i][L"npm"].is_string())
             continue;
 
-        if (array[i][L"lts"].is_null() || !array[i][L"lts"].is_string())
+        if (array[i][L"lts"].is_null())
             continue;
 
         if (array[i][L"security"].is_null() || !array[i][L"security"].is_boolean())
@@ -97,24 +97,39 @@ void Nvm::parse_available_list(json::value& jsonobj)
                 chk++;
             }
         }
+
         if (chk == 2) {
             json::value item = array[i];
-            std::wstring ltsstr = item[L"lts"].as_string();
+            std::wstring ltsstr = L"";
+            std::wstring secstr = L"";
+
+            if (item[L"lts"].is_string()) {
+                ltsstr = item[L"lts"].as_string();
+            } else {
+                ltsstr = L"false";
+            }
+
+            if (item[L"security"].as_bool()) {
+                secstr = L"true";
+            } else {
+                secstr = L"false";
+            }
+
             Node* node = new Node(
                 item[L"version"].as_string(),
                 item[L"npm"].as_string(),
                 ltsstr,
-                item[L"security"].as_bool(),
+                secstr,
                 item[L"modules"].as_string());
 
             m_nodes.push_back(node);
             if (0 != ltsstr.find(L"false")) {
                 m_lts_nodes.push_back(node);
             }
-            if (item[L"security"].as_bool()) {
+            if (0 == secstr.find(L"true")) {
                 m_sec_nodes.push_back(node);
             }
-            if (0 != ltsstr.find(L"false") && item[L"security"].as_bool()) {
+            if (0 != ltsstr.find(L"false") && 0 == secstr.find(L"true")) {
                 m_lts_sec_nodes.push_back(node);
             }
         }
@@ -171,40 +186,39 @@ HWND Nvm::create_listview(int nX, int nY, int nWidth, int nHeight, int id)
 }
 void Nvm::create_listview_items()
 {
-    for (int i = 0; i < m_lts_nodes.size(); i++) {
-        create_listview_item(m_dl_listview, m_lts_nodes[i]);
+    for (int i = 0; i < m_nodes.size(); i++) {
+        create_listview_item(m_dl_listview, m_nodes[i], i * 2, L"x64");
+        create_listview_item(m_dl_listview, m_nodes[i], i * 2 + 1, L"x86");
     }
 }
-void Nvm::create_listview_item(HWND lstvhwnd, Node* node)
+void Nvm::create_listview_item(HWND lstvhwnd, Node* node, int idx, const TCHAR* arch)
 {
     LVITEM item = { 0 };
     item.mask = LVIF_TEXT;
-    for (int i = 0; i < 3; i++) {
-        item.pszText = (LPWSTR)node->m_version.c_str();
-        item.iItem = i;
-        item.iSubItem = 0;
-        ListView_InsertItem(lstvhwnd, &item);
+    item.pszText = (LPWSTR)node->m_version.c_str();
+    item.iItem = idx;
+    item.iSubItem = 0;
+    ListView_InsertItem(lstvhwnd, &item);
 
-        item.pszText = (LPWSTR)L"x64";
-        item.iItem = i;
-        item.iSubItem = 1;
-        ListView_SetItem(lstvhwnd, &item);
+    item.pszText = (LPWSTR)arch;
+    item.iItem = idx;
+    item.iSubItem = 1;
+    ListView_SetItem(lstvhwnd, &item);
 
-        item.pszText = (LPWSTR)node->m_lts.c_str();
-        item.iItem = i;
-        item.iSubItem = 2;
-        ListView_SetItem(lstvhwnd, &item);
+    item.pszText = (LPWSTR)node->m_lts.c_str();
+    item.iItem = idx;
+    item.iSubItem = 2;
+    ListView_SetItem(lstvhwnd, &item);
 
-        item.pszText = (LPWSTR)L"";
-        item.iItem = i;
-        item.iSubItem = 3;
-        ListView_SetItem(lstvhwnd, &item);
+    item.pszText = (LPWSTR)node->m_security.c_str();
+    item.iItem = idx;
+    item.iSubItem = 3;
+    ListView_SetItem(lstvhwnd, &item);
 
-        item.pszText = (LPWSTR)node->m_modules.c_str();
-        item.iItem = i;
-        item.iSubItem = 4;
-        ListView_SetItem(lstvhwnd, &item);
-    }
+    item.pszText = (LPWSTR)node->m_modules.c_str();
+    item.iItem = idx;
+    item.iSubItem = 4;
+    ListView_SetItem(lstvhwnd, &item);
 }
 void Nvm::create_control()
 {

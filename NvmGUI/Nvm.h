@@ -41,5 +41,5 @@ private:
     HWND create_listview(int nX, int nY, int nWidth, int nHeight, int id);
 
     void create_listview_items();
-    void create_listview_item(HWND lstvhwnd, Node* node);
+    void create_listview_item(HWND lstvhwnd, Node* node, int idx, const TCHAR* arch);
 };

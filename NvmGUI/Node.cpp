@@ -7,7 +7,7 @@
 #include <shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
 
-Node::Node(std::wstring version, std::wstring npm, std::wstring lts, bool security, std::wstring modules)
+Node::Node(std::wstring version, std::wstring npm, std::wstring lts, std::wstring security, std::wstring modules)
     : m_version(version)
     , m_npm(npm)
     , m_lts(lts)
