@@ -16,6 +16,7 @@
 #define IDC_DL_BUTTON			1002
 #define IDC_DL_LISTVIEW			1003
 #define IDC_DL_INSTALL			1004
+#define IDC_DL_PROGRESS			1005
 
 #define IDC_MYICON				2
 #ifndef IDC_STATIC

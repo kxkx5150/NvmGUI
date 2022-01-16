@@ -12,6 +12,7 @@ public:
 
 
 private:
+    HWND m_progresshwnd = nullptr;
 
     std::wstring m_x86 = L"win-x86.zip";
     std::wstring m_x64 = L"win-x64.zip";
@@ -21,7 +22,8 @@ private:
     std::wstring m_x64_dir = L"";
 
 public:
-    Node(std::wstring version, std::wstring npm, std::wstring lts, std::wstring security, std::wstring modules);
+    Node(std::wstring version, std::wstring npm, std::wstring lts, 
+        std::wstring security, std::wstring modules, HWND proghwnd);
     ~Node();
 
     std::wstring get_download_url(bool x86 = false);

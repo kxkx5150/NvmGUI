@@ -1,19 +1,22 @@
 #include "Node.h"
 #include "DownloadProgress.h"
-#include <shlobj.h>
-#pragma comment(lib, "shell32.lib")
 #include <Shellapi.h>
-#include <urlmon.h>
-#pragma comment(lib, "urlmon.lib")
+#include <shlobj.h>
 #include <shlwapi.h>
+#include <urlmon.h>
+#pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "urlmon.lib")
 
-Node::Node(std::wstring version, std::wstring npm, std::wstring lts, std::wstring security, std::wstring modules)
+
+Node::Node(std::wstring version, std::wstring npm, std::wstring lts, 
+    std::wstring security, std::wstring modules, HWND proghwnd)
     : m_version(version)
     , m_npm(npm)
     , m_lts(lts)
     , m_security(security)
     , m_modules(modules)
+    , m_progresshwnd(proghwnd)
 {
     TCHAR extpath[MAX_PATH];
     GetCurrentDirectory(MAX_PATH, extpath);
@@ -79,7 +82,9 @@ void Node::download_node(bool x86)
 
     OutputDebugString(L"start-----------");
     DownloadProgress progress;
-    HRESULT res = URLDownloadToFile(NULL, url.c_str(), path.c_str(), 0, 
+    progress.SetHWND(m_progresshwnd);
+
+    HRESULT res = URLDownloadToFile(NULL, url.c_str(), path.c_str(), 0,
         static_cast<IBindStatusCallback*>(&progress));
 
     if (res == S_OK) {

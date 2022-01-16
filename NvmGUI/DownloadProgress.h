@@ -1,7 +1,10 @@
 #pragma once
 #include <Windows.h>
+#include <CommCtrl.h>
 
 class DownloadProgress : public IBindStatusCallback {
+    HWND m_progress = nullptr;
+
 public:
     HRESULT __stdcall QueryInterface(const IID&, void**)
     {
@@ -18,6 +21,11 @@ public:
     HRESULT STDMETHODCALLTYPE OnStartBinding(DWORD dwReserved, IBinding* pib)
     {
         return E_NOTIMPL;
+    }
+    ULONG STDMETHODCALLTYPE SetHWND(HWND hwnd)
+    {
+        m_progress = hwnd;
+        return 1;
     }
     virtual HRESULT STDMETHODCALLTYPE GetPriority(LONG* pnPriority)
     {
@@ -45,6 +53,10 @@ public:
     }
     virtual HRESULT __stdcall OnProgress(ULONG ulProgress, ULONG ulProgressMax, ULONG ulStatusCode, LPCWSTR szStatusText)
     {
+        if (0 < ulProgressMax) {
+            int val = ulProgress / ulProgressMax * 100;
+            SendMessage(m_progress, PBM_SETPOS, (WPARAM)val, 0);
+        }
         return S_OK;
     }
 };

@@ -18,6 +18,7 @@ class Nvm {
     HWND m_dl_combobox = nullptr;
     HWND m_dl_get_btn = nullptr;
     HWND m_dl_install_btn = nullptr;
+    HWND m_dl_progress = nullptr;
 
 
     HFONT m_20Font = nullptr;
@@ -60,4 +61,6 @@ private:
     void create_listview_item(HWND lstvhwnd, Node* node, int idx, const TCHAR* arch);
     HWND create_combobox(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
     HWND create_button(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);
+    HWND create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
+
 };

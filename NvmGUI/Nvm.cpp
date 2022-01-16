@@ -1,7 +1,6 @@
 ﻿#include "Nvm.h"
 #include "Resource.h"
 #include <CommCtrl.h>
-#include <commctrl.h>
 #include <crtdbg.h>
 #include <shlwapi.h>
 #pragma comment(lib, "Comctl32.lib")
@@ -129,7 +128,8 @@ void Nvm::parse_available_list(json::value& jsonobj)
                 item[L"npm"].as_string(),
                 ltsstr,
                 secstr,
-                item[L"modules"].as_string());
+                item[L"modules"].as_string(),
+                m_dl_progress);
 
             m_nodes.push_back(node);
             if (0 != ltsstr.find(L"false")) {
@@ -287,17 +287,27 @@ HWND Nvm::create_button(HWND hParent, int nX, int nY, int nWidth, int nHeight, i
         nX, nY, nWidth, nHeight,
         hParent, (HMENU)id, m_hInst, NULL);
 }
+
+HWND Nvm::create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id)
+{
+    return CreateWindowEx(0,
+        PROGRESS_CLASS, TEXT(""),
+        WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
+        nX, nY, nWidth, nHeight,
+        hParent, (HMENU)id, m_hInst, NULL);
+}
+
 void Nvm::create_control()
 {
     m_20Font = create_font(20);
     m_18Font = create_font(18);
     m_15Font = create_font(15);
 
-    m_dl_combobox = create_combobox(m_hwnd, 2, 8, 200, 200, IDC_DL_COMBOBOX);
-    m_dl_get_btn = create_button(m_hwnd, 206, 7, 80, 24, IDC_DL_BUTTON, L"Get List");
-    m_dl_listview = create_listview(m_hwnd, 2, 38, 400, 200, IDC_DL_LISTVIEW);
-    m_dl_install_btn = create_button(m_hwnd, 98, 246, 200, 40, IDC_DL_INSTALL, L"Install");
-
+    m_dl_combobox = create_combobox(m_hwnd, 2, 7, 200, 200, IDC_DL_COMBOBOX);
+    m_dl_get_btn = create_button(m_hwnd, 206, 6, 80, 24, IDC_DL_BUTTON, L"Get List");
+    m_dl_listview = create_listview(m_hwnd, 2, 38, 400, 180, IDC_DL_LISTVIEW);
+    m_dl_install_btn = create_button(m_hwnd, 98, 222, 200, 36, IDC_DL_INSTALL, L"Install");
+    m_dl_progress = create_progress(m_hwnd, 50, 270, 300, 16, IDC_DL_PROGRESS);
 
 
     SetWindowSubclass(m_hwnd, &SubclassWindowProc, 0, 0);
@@ -325,7 +335,6 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         case IDC_DL_INSTALL: {
             g_nvm->click_dlinstall_btn();
         } break;
-
         }
     } break;
 
