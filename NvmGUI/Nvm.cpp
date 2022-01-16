@@ -124,6 +124,7 @@ void Nvm::parse_available_list(json::value& jsonobj)
             }
 
             Node* node = new Node(
+                this,
                 item[L"version"].as_string(),
                 item[L"npm"].as_string(),
                 ltsstr,
@@ -143,6 +144,19 @@ void Nvm::parse_available_list(json::value& jsonobj)
             }
         }
     }
+}
+
+void Nvm::add_installed_list(Node* node, bool x86)
+{
+    m_installed_list.push_back(node);
+    std::wstring lbl = node->m_version + L"   ";
+    if (x86) {
+        lbl += L"x86";
+    } else {
+        lbl += L"x64";
+    }
+
+    SendMessage(m_installed_combobox, CB_ADDSTRING, 1, (LPARAM)lbl.c_str());
 }
 int Nvm::get_nodes_len()
 {
@@ -187,6 +201,9 @@ void Nvm::set_font()
     SendMessage(m_dl_get_btn, WM_SETFONT, (WPARAM)m_18Font, MAKELPARAM(FALSE, 0));
     SendMessage(m_dl_listview, WM_SETFONT, (WPARAM)m_15Font, MAKELPARAM(FALSE, 0));
     SendMessage(m_dl_install_btn, WM_SETFONT, (WPARAM)m_20Font, MAKELPARAM(FALSE, 0));
+    SendMessage(m_installed_combobox, WM_SETFONT, (WPARAM)m_headFont, MAKELPARAM(FALSE, 0));
+    SendMessage(m_installed_usebtn, WM_SETFONT, (WPARAM)m_20Font, MAKELPARAM(FALSE, 0));
+    SendMessage(m_installed_deletebtn, WM_SETFONT, (WPARAM)m_20Font, MAKELPARAM(FALSE, 0));
 }
 HWND Nvm::create_listview(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id)
 {
@@ -287,7 +304,6 @@ HWND Nvm::create_button(HWND hParent, int nX, int nY, int nWidth, int nHeight, i
         nX, nY, nWidth, nHeight,
         hParent, (HMENU)id, m_hInst, NULL);
 }
-
 HWND Nvm::create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id)
 {
     return CreateWindowEx(0,
@@ -296,9 +312,17 @@ HWND Nvm::create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight,
         nX, nY, nWidth, nHeight,
         hParent, (HMENU)id, m_hInst, NULL);
 }
-
+HWND Nvm::create_statictxt(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt)
+{
+    return CreateWindow(
+        TEXT("STATIC"), txt,
+        WS_CHILD | WS_VISIBLE | SS_CENTERIMAGE | SS_CENTER,
+        nX, nY, nWidth, nHeight,
+        hParent, (HMENU)id, m_hInst, NULL);
+}
 void Nvm::create_control()
 {
+    m_headFont = create_font(24);
     m_20Font = create_font(20);
     m_18Font = create_font(18);
     m_15Font = create_font(15);
@@ -306,11 +330,16 @@ void Nvm::create_control()
     m_dl_combobox = create_combobox(m_hwnd, 2, 7, 200, 200, IDC_DL_COMBOBOX);
     m_dl_get_btn = create_button(m_hwnd, 206, 6, 80, 24, IDC_DL_BUTTON, L"Get List");
     m_dl_listview = create_listview(m_hwnd, 2, 38, 400, 180, IDC_DL_LISTVIEW);
-    m_dl_install_btn = create_button(m_hwnd, 98, 222, 200, 36, IDC_DL_INSTALL, L"Install");
-    m_dl_progress = create_progress(m_hwnd, 50, 270, 300, 16, IDC_DL_PROGRESS);
+    m_dl_install_btn = create_button(m_hwnd, 102, 222, 200, 36, IDC_DL_INSTALL, L"Install");
+    m_dl_progress = create_progress(m_hwnd, 103, 270, 200, 16, IDC_DL_PROGRESS);
+
+    HWND insttxt = create_statictxt(m_hwnd, 0, 320, 420, 28, IDC_INST_TXT, L"Installed List");
+    SendMessage(insttxt, WM_SETFONT, (WPARAM)m_headFont, MAKELPARAM(FALSE, 0));
+    m_installed_combobox = create_combobox(m_hwnd, 65, 360, 272, 200, IDC_INST_LIST);
+    m_installed_usebtn = create_button(m_hwnd, 62, 416, 120, 36, IDC_INST_USE, L"Use");
+    m_installed_deletebtn = create_button(m_hwnd, 216, 416, 120, 36, IDC_INST_DELETE, L"Delete");
 
     SetWindowSubclass(m_hwnd, &SubclassWindowProc, 0, 0);
-
     set_font();
 
     SendMessage(m_dl_combobox, CB_ADDSTRING, 0, (LPARAM)L"");
@@ -336,6 +365,17 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         } break;
         }
     } break;
+
+    case WM_CTLCOLORSTATIC: {
+        DWORD CtrlID = GetDlgCtrlID((HWND)lParam);
+        if (CtrlID == IDC_INST_TXT) {
+            static HBRUSH hBrush = CreateSolidBrush(RGB(0, 230, 120));
+            HDC hdcStatic = (HDC)wParam;
+            SetTextColor(hdcStatic, RGB(0, 0, 0));
+            SetBkColor(hdcStatic, RGB(0, 230, 120));
+            return (INT_PTR)hBrush;
+        }
+    }
 
     case WM_NCDESTROY:
         break;

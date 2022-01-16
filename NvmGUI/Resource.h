@@ -18,6 +18,11 @@
 #define IDC_DL_INSTALL			1004
 #define IDC_DL_PROGRESS			1005
 
+#define IDC_INST_LIST			1006
+#define IDC_INST_USE			1007
+#define IDC_INST_DELETE			1008
+#define IDC_INST_TXT			1010
+
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1

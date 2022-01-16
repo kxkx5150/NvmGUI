@@ -9,9 +9,10 @@
 #pragma comment(lib, "urlmon.lib")
 
 
-Node::Node(std::wstring version, std::wstring npm, std::wstring lts, 
+Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts, 
     std::wstring security, std::wstring modules, HWND proghwnd)
-    : m_version(version)
+    : m_nvm(nvm)
+    , m_version(version)
     , m_npm(npm)
     , m_lts(lts)
     , m_security(security)
@@ -91,6 +92,8 @@ void Node::download_node(bool x86)
         OutputDebugString(L"Ok\n");
         ExtractZip(path.c_str(), m_root_dir.c_str());
         DeleteFile(path.c_str());
+
+        m_nvm->add_installed_list(this, x86);
         OutputDebugString(L"end-----------");
 
     } else if (res == E_OUTOFMEMORY) {

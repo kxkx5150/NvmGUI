@@ -1,11 +1,9 @@
 #pragma once
+#include "Nvm.h"
 #include <Windows.h>
 #include <string>
 
-
-
-
-
+class Nvm;
 class Node {
 public:
     std::wstring m_version = nullptr;
@@ -14,8 +12,8 @@ public:
     std::wstring m_security = nullptr;
     std::wstring m_modules = nullptr;
 
-
 private:
+    Nvm* m_nvm = nullptr;
     HWND m_progresshwnd = nullptr;
 
     std::wstring m_x86 = L"win-x86.zip";
@@ -26,7 +24,7 @@ private:
     std::wstring m_x64_dir = L"";
 
 public:
-    Node(std::wstring version, std::wstring npm, std::wstring lts, 
+    Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
         std::wstring security, std::wstring modules, HWND proghwnd);
     ~Node();
 
@@ -45,5 +43,3 @@ private:
 
     BOOL ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath);
 };
-
-
