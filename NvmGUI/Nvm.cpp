@@ -35,7 +35,7 @@ void Nvm::init()
 }
 void Nvm::clear_nodes()
 {
-    for (int i = 0; i < m_nodes.size(); i++) {
+    for (size_t i = 0; i < m_nodes.size(); i++) {
         delete m_nodes[i];
     }
     m_nodes.clear();
@@ -72,7 +72,7 @@ void Nvm::parse_available_list(json::value& jsonobj)
 
     json::array array = jsonobj.as_array();
 
-    for (int i = 0; i < array.size(); ++i) {
+    for (size_t i = 0; i < array.size(); i++) {
         if (array[i][L"version"].is_null() || !array[i][L"version"].is_string())
             continue;
 
@@ -95,7 +95,7 @@ void Nvm::parse_available_list(json::value& jsonobj)
         std::wstring nodev = array[i].at(U("version")).as_string();
         web::json::array filetypes = array[i].at(U("files")).as_array();
 
-        for (int j = 0; j < filetypes.size(); j++) {
+        for (size_t j = 0; j < filetypes.size(); j++) {
             if (filetypes[j].is_null())
                 continue;
             std::wstring fname = filetypes[j].as_string();
@@ -236,7 +236,7 @@ HWND Nvm::create_listview(HWND hParent, int nX, int nY, int nWidth, int nHeight,
 void Nvm::create_dllistview_items(std::vector<Node*> nodes)
 {
     m_current_dllist.clear();
-    for (int i = 0; i < nodes.size(); i++) {
+    for (size_t i = 0; i < nodes.size(); i++) {
         create_listview_item(m_dl_listview, nodes[i], i * 2, L"x64");
         create_listview_item(m_dl_listview, nodes[i], i * 2 + 1, L"x86");
         m_current_dllist.push_back(nodes[i]);
@@ -308,7 +308,6 @@ void Nvm::create_control()
     m_dl_listview = create_listview(m_hwnd, 2, 38, 400, 180, IDC_DL_LISTVIEW);
     m_dl_install_btn = create_button(m_hwnd, 98, 222, 200, 36, IDC_DL_INSTALL, L"Install");
     m_dl_progress = create_progress(m_hwnd, 50, 270, 300, 16, IDC_DL_PROGRESS);
-
 
     SetWindowSubclass(m_hwnd, &SubclassWindowProc, 0, 0);
 

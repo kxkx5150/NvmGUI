@@ -1,4 +1,4 @@
-#include "Node.h"
+ï»¿#include "Node.h"
 #include "DownloadProgress.h"
 #include <Shellapi.h>
 #include <shlobj.h>
@@ -112,17 +112,17 @@ BOOL Node::ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
     }
     VARIANT vDtcDir;
     Folder* pOutDtc;
-    // “WŠJæFolderƒIƒuƒWƒFƒNƒg‚ğì¬
+    // å±•é–‹å…ˆFolderã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ä½œæˆ
     VariantInit(&vDtcDir);
     vDtcDir.vt = VT_BSTR;
     vDtcDir.bstrVal = SysAllocString(OutPath);
     hr = pShellDisp->NameSpace(vDtcDir, &pOutDtc);
     VariantClear(&vDtcDir);
     if (hr != S_OK) {
-        MessageBox(NULL, TEXT("“WŠJæƒtƒHƒ‹ƒ_[‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B"), NULL, MB_ICONWARNING);
+        MessageBox(NULL, TEXT("å±•é–‹å…ˆãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã§ã—ãŸã€‚"), NULL, MB_ICONWARNING);
         return FALSE;
     }
-    // ZIPƒtƒ@ƒCƒ‹‚ÌFolderƒIƒuƒWƒFƒNƒg‚ğì¬
+    // ZIPãƒ•ã‚¡ã‚¤ãƒ«ã®Folderã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ä½œæˆ
     VARIANT varZip;
     Folder* pZipFile;
     VariantInit(&varZip);
@@ -132,10 +132,10 @@ BOOL Node::ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
     VariantClear(&varZip);
     if (hr != S_OK) {
         pOutDtc->Release();
-        MessageBox(NULL, TEXT("ZIPƒtƒ@ƒCƒ‹‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B"), NULL, MB_ICONWARNING);
+        MessageBox(NULL, TEXT("ZIPãƒ•ã‚¡ã‚¤ãƒ«ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã§ã—ãŸã€‚"), NULL, MB_ICONWARNING);
         return FALSE;
     }
-    // ZIPƒtƒ@ƒCƒ‹‚Ì’†g‚ğæ“¾
+    // ZIPãƒ•ã‚¡ã‚¤ãƒ«ã®ä¸­èº«ã‚’å–å¾—
     FolderItems* pZipItems;
     hr = pZipFile->Items(&pZipItems);
     if (hr != S_OK) {
@@ -149,14 +149,14 @@ BOOL Node::ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
     vDisp.pdispVal = pZipItems;
     VariantInit(&vOpt);
     vOpt.vt = VT_I4;
-    vOpt.lVal = 0; //FOF_SILENT‚ğw’è‚·‚é‚Æˆ—’†‚ÌŒo‰ß‚ª•\¦‚³‚ê‚È‚­‚È‚è‚Ü‚·
-    // ZIPƒtƒ@ƒCƒ‹‚Ì’†g‚ğ“WŠJæƒtƒHƒ‹ƒ_[‚ÉƒRƒs[
+    vOpt.lVal = 0; //FOF_SILENTã‚’æŒ‡å®šã™ã‚‹ã¨å‡¦ç†ä¸­ã®çµŒéãŒè¡¨ç¤ºã•ã‚Œãªããªã‚Šã¾ã™
+    // ZIPãƒ•ã‚¡ã‚¤ãƒ«ã®ä¸­èº«ã‚’å±•é–‹å…ˆãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã«ã‚³ãƒ”ãƒ¼
     hr = pOutDtc->CopyHere(vDisp, vOpt);
     if (hr != S_OK) {
         pZipItems->Release();
         pZipFile->Release();
         pOutDtc->Release();
-        MessageBox(NULL, TEXT("“WŠJ‚É¸”s‚µ‚Ü‚µ‚½B"), NULL, MB_ICONWARNING);
+        MessageBox(NULL, TEXT("å±•é–‹ã«å¤±æ•—ã—ã¾ã—ãŸã€‚"), NULL, MB_ICONWARNING);
         return FALSE;
     }
 
