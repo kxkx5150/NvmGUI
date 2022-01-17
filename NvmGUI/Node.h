@@ -31,7 +31,6 @@ public:
     std::wstring get_download_url(bool x86 = false);
     std::wstring get_store_path(bool x86 = false);
     std::wstring get_store_filename(bool x86 = false);
-    std::wstring get_store_dirname(bool x86 = false);
     void download_node(bool x86 = false);
 
 private:

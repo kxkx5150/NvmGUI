@@ -146,13 +146,13 @@
     <ClInclude Include="NvmGUI.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="Zip.h" />
+    <ClInclude Include="unzip\Zip.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Node.cpp" />
     <ClCompile Include="Nvm.cpp" />
     <ClCompile Include="NvmGUI.cpp" />
-    <ClCompile Include="Zip.cpp" />
+    <ClCompile Include="unzip\Zip.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="NvmGUI.rc" />

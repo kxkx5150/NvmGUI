@@ -1,13 +1,10 @@
 ﻿#include "Node.h"
 #include "DownloadProgress.h"
-#include <Shellapi.h>
-#include <shlobj.h>
 #include <shlwapi.h>
-#include <urlmon.h>
-#pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "shlwapi.lib")
+#include <urlmon.h>
 #pragma comment(lib, "urlmon.lib")
-#include "zip.h"
+#include "unzip/zip.h"
 
 Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     std::wstring security, std::wstring modules, HWND proghwnd)
@@ -23,8 +20,9 @@ Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     GetCurrentDirectory(MAX_PATH, extpath);
     wsprintf(extpath, TEXT("%s\\nodes\\"), extpath);
     m_root_dir = extpath;
-    m_x86_dir = m_root_dir + L"node-" + get_store_dirname(true);
-    m_x64_dir = m_root_dir + L"node-" + get_store_dirname();
+    m_x86_dir = m_root_dir + L"node-" + m_version + L"-win-x86";
+    m_x64_dir = m_root_dir + L"node-" + m_version + L"-win-x64";
+    
 }
 Node::~Node()
 {
@@ -46,7 +44,7 @@ std::wstring Node::get_download_url(bool x86)
 std::wstring Node::get_store_path(bool x86)
 {
     std::wstring fname = m_root_dir;
-    fname += get_store_filename();
+    fname += get_store_filename(x86);
     return fname;
 }
 std::wstring Node::get_store_filename(bool x86)
@@ -60,16 +58,6 @@ std::wstring Node::get_store_filename(bool x86)
     }
     return fname;
 }
-std::wstring Node::get_store_dirname(bool x86)
-{
-    std::wstring dname = m_version;
-    if (x86) {
-        dname += L"-win-x86";
-    } else {
-        dname += L"-win-x64";
-    }
-    return dname;
-}
 void Node::download_node(bool x86)
 {
     BOOL ichk = installed_check(x86);
@@ -79,7 +67,7 @@ void Node::download_node(bool x86)
     downloaded_check(x86);
 
     std::wstring url = get_download_url();
-    std::wstring path = get_store_path();
+    std::wstring path = get_store_path(x86);
 
     OutputDebugString(L"start-----------");
     DownloadProgress progress;
@@ -91,13 +79,10 @@ void Node::download_node(bool x86)
     if (res == S_OK) {
         OutputDebugString(L"Ok\n");
 
-        //Unzip("C:\\Users\\kunim\\Downloads\\あ\\test4.zip", "C:\\Users\\kunim\\Downloads\\");
-
-        ExtractZip(path.c_str(), m_root_dir.c_str());
+        Unzip(path, m_root_dir);
         DeleteFile(path.c_str());
-
         m_nvm->add_installed_list(this, x86);
-        OutputDebugString(L"end-----------");
+        OutputDebugString(L"end-----------\n");
 
     } else if (res == E_OUTOFMEMORY) {
         OutputDebugString(L"Buffer length invalid, or insufficient memory\n");
@@ -106,72 +91,6 @@ void Node::download_node(bool x86)
     } else {
         OutputDebugString(L"Other error:\n");
     }
-}
-BOOL Node::ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
-{
-    IShellDispatch* pShellDisp;
-    HRESULT hres = CoInitializeEx(0, COINIT_MULTITHREADED);
-    HRESULT hr = CoCreateInstance(CLSID_Shell, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pShellDisp));
-    if (FAILED(hr)) {
-        CoUninitialize();
-        return FALSE;
-    }
-    VARIANT vDtcDir;
-    Folder* pOutDtc;
-    // 展開先Folderオブジェクトを作成
-    VariantInit(&vDtcDir);
-    vDtcDir.vt = VT_BSTR;
-    vDtcDir.bstrVal = SysAllocString(OutPath);
-    hr = pShellDisp->NameSpace(vDtcDir, &pOutDtc);
-    VariantClear(&vDtcDir);
-    if (hr != S_OK) {
-        MessageBox(NULL, TEXT("展開先フォルダーが見つかりませんでした。"), NULL, MB_ICONWARNING);
-        return FALSE;
-    }
-    // ZIPファイルのFolderオブジェクトを作成
-    VARIANT varZip;
-    Folder* pZipFile;
-    VariantInit(&varZip);
-    varZip.vt = VT_BSTR;
-    varZip.bstrVal = SysAllocString(ZipPath);
-    hr = pShellDisp->NameSpace(varZip, &pZipFile);
-    VariantClear(&varZip);
-    if (hr != S_OK) {
-        pOutDtc->Release();
-        MessageBox(NULL, TEXT("ZIPファイルが見つかりませんでした。"), NULL, MB_ICONWARNING);
-        return FALSE;
-    }
-    // ZIPファイルの中身を取得
-    FolderItems* pZipItems;
-    hr = pZipFile->Items(&pZipItems);
-    if (hr != S_OK) {
-        pZipFile->Release();
-        pOutDtc->Release();
-        return FALSE;
-    }
-    VARIANT vDisp, vOpt;
-    VariantInit(&vDisp);
-    vDisp.vt = VT_DISPATCH;
-    vDisp.pdispVal = pZipItems;
-    VariantInit(&vOpt);
-    vOpt.vt = VT_I4;
-    vOpt.lVal = 0; //FOF_SILENTを指定すると処理中の経過が表示されなくなります
-    // ZIPファイルの中身を展開先フォルダーにコピー
-    hr = pOutDtc->CopyHere(vDisp, vOpt);
-    if (hr != S_OK) {
-        pZipItems->Release();
-        pZipFile->Release();
-        pOutDtc->Release();
-        MessageBox(NULL, TEXT("展開に失敗しました。"), NULL, MB_ICONWARNING);
-        return FALSE;
-    }
-
-    pZipItems->Release();
-    pZipFile->Release();
-    pOutDtc->Release();
-    CoUninitialize();
-
-    return TRUE;
 }
 BOOL Node::installed_check(bool x86)
 {

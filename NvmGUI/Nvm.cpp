@@ -56,7 +56,6 @@ void Nvm::download_available_list()
         })
         .then([=](json::value jo) {
             parse_available_list(jo);
-            //m_lts_nodes[0]->download_node();
         });
     try {
         resp.wait();
@@ -308,7 +307,7 @@ HWND Nvm::create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight,
 {
     return CreateWindowEx(0,
         PROGRESS_CLASS, TEXT(""),
-        WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
+        WS_CHILD | WS_VISIBLE | PBS_SMOOTH ,
         nX, nY, nWidth, nHeight,
         hParent, (HMENU)id, m_hInst, NULL);
 }
@@ -322,6 +321,8 @@ HWND Nvm::create_statictxt(HWND hParent, int nX, int nY, int nWidth, int nHeight
 }
 void Nvm::create_control()
 {
+    InitCommonControls();
+
     m_headFont = create_font(24);
     m_20Font = create_font(20);
     m_18Font = create_font(18);
