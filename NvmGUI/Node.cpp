@@ -6,8 +6,7 @@
 #pragma comment(lib, "urlmon.lib")
 #include "unzip/zip.h"
 
-Nvm* m_nvm = nullptr;
-
+extern Nvm* g_nvm;
 Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     std::wstring security, std::wstring modules, HWND proghwnd)
     : m_version(version)
@@ -17,7 +16,6 @@ Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     , m_modules(modules)
     , m_progresshwnd(proghwnd)
 {
-    m_nvm = nvm;
     TCHAR extpath[MAX_PATH];
     GetCurrentDirectory(MAX_PATH, extpath);
     wsprintf(extpath, TEXT("%s\\nodes\\"), extpath);
@@ -62,7 +60,7 @@ std::wstring Node::get_store_filename(bool x86)
 
 void callback_progress(ULONG& number_entry, ULONG& cont, char* filename)
 {
-    m_nvm->set_progress_value(number_entry, cont, filename);
+    g_nvm->set_progress_value(number_entry, cont, filename);
 }
 void Node::download_node(bool x86)
 {
@@ -87,7 +85,7 @@ void Node::download_node(bool x86)
         std::wstring ltsstr = this->m_lts;
         std::wstring secstr = this->m_security;
         std::wstring modstr = this->m_modules;
-        m_nvm->add_installed_list(verstr, npmstr, ltsstr, secstr, modstr, x86);
+        g_nvm->add_installed_list(verstr, npmstr, ltsstr, secstr, modstr, x86);
 
     } else if (res == E_OUTOFMEMORY) {
         OutputDebugString(L"Buffer length invalid, or insufficient memory\n");

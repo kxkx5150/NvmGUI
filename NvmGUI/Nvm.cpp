@@ -9,12 +9,11 @@
 LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
     LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
-Nvm* g_nvm = nullptr;
+extern Nvm* g_nvm;
 Nvm::Nvm(HWND hwnd, HINSTANCE hInst)
     : m_hwnd(hwnd)
     , m_hInst(hInst)
 {
-    g_nvm = this;
     init();
 }
 Nvm::~Nvm()
@@ -23,6 +22,8 @@ Nvm::~Nvm()
     delete m_18Font;
     delete m_20Font;
     delete m_headFont;
+    g_nvm->write_setting_csv();
+    //g_nvm->clear_nodes();
 }
 void Nvm::init()
 {
@@ -547,8 +548,7 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
     }
 
     case WM_NCDESTROY: {
-        g_nvm->write_setting_csv();
-        g_nvm->clear_nodes();
+
         break;
     }
     }

@@ -9,6 +9,7 @@ HWND g_mainhwnd = nullptr;
 HINSTANCE hInst;
 WCHAR szTitle[MAX_LOADSTRING];
 WCHAR szWindowClass[MAX_LOADSTRING];
+extern Nvm* g_nvm = nullptr;
 
 ATOM MyRegisterClass(HINSTANCE hInstance);
 BOOL InitInstance(HINSTANCE, int);
@@ -101,12 +102,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_CREATE: {
         g_mainhwnd = hWnd;
-        Nvm* nvm = nullptr;
-        nvm = new Nvm(hWnd, hInst);
-        nvm->create_control();
+        g_nvm = new Nvm(hWnd, hInst);
+        g_nvm->create_control();
     } break;
 
     case WM_DESTROY:
+        delete g_nvm;
         PostQuitMessage(0);
         break;
     default:
