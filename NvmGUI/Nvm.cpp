@@ -19,8 +19,9 @@ Nvm::Nvm(HWND hwnd, HINSTANCE hInst)
 Nvm::~Nvm()
 {
     RemoveWindowSubclass(m_hwnd, SubclassWindowProc, 0);
-    g_nvm->write_setting_csv();
-    g_nvm->clear_nodes();
+    write_setting_csv();
+    clear_nodes();
+    clear_install_nodes();
 }
 void Nvm::init()
 {
@@ -42,7 +43,9 @@ void Nvm::clear_nodes()
     m_lts_nodes.clear();
     m_sec_nodes.clear();
     m_lts_sec_nodes.clear();
-
+}
+void Nvm::clear_install_nodes()
+{
     for (size_t i = 0; i < m_installed_list.size(); i++) {
         delete m_installed_list[i];
     }

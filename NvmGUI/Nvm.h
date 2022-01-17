@@ -56,6 +56,7 @@ public:
 
     int get_nodes_len();
     void clear_nodes();
+    void clear_install_nodes();
 
     void click_dllist_btn();
     void click_dlinstall_btn();
