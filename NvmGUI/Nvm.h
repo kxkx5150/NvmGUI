@@ -8,6 +8,7 @@
 using namespace web;
 using namespace web::http;
 using namespace web::http::client;
+
 class Node;
 
 class Nvm {
@@ -23,11 +24,6 @@ class Nvm {
     HWND m_installed_usebtn = nullptr;
     HWND m_installed_deletebtn = nullptr;
 
-    HFONT m_headFont = nullptr;
-    HFONT m_20Font = nullptr;
-    HFONT m_18Font = nullptr;
-    HFONT m_15Font = nullptr;
-
     std::vector<Node*> m_nodes;
     std::vector<Node*> m_lts_nodes;
     std::vector<Node*> m_sec_nodes;
@@ -42,6 +38,10 @@ class Nvm {
 public:
     HWND m_dl_install_btn = nullptr;
 
+    HFONT m_headFont = nullptr;
+    HFONT m_20Font = nullptr;
+    HFONT m_15Font = nullptr;
+    HFONT m_18Font = nullptr;
 
 public:
     void parse_available_list(json::value& jsonobj);
@@ -66,7 +66,6 @@ public:
     void set_progress_value(ULONG& number_entry, ULONG& cont, char* filename);
     void write_setting_csv();
 
-
 private:
     HFONT create_font(int fontsize);
     void set_font();
@@ -77,11 +76,10 @@ private:
     HWND create_combobox(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
     HWND create_button(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);
     HWND create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
-    HWND create_statictxt(HWND hParent, int nX, int nY, int nWidth, int nHeight,int id,  const TCHAR* txt);
+    HWND create_statictxt(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);
     int write_file(TCHAR* filename, TCHAR* args);
     void exe_directory_path(TCHAR* path);
     void read_setting_csv();
     TCHAR* read_file(const TCHAR* filename);
     std::vector<std::wstring> split(std::wstring& input, TCHAR delimiter);
-
 };

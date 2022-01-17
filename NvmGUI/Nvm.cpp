@@ -18,12 +18,9 @@ Nvm::Nvm(HWND hwnd, HINSTANCE hInst)
 }
 Nvm::~Nvm()
 {
-    delete m_15Font;
-    delete m_18Font;
-    delete m_20Font;
-    delete m_headFont;
+    RemoveWindowSubclass(m_hwnd, SubclassWindowProc, 0);
     g_nvm->write_setting_csv();
-    //g_nvm->clear_nodes();
+    g_nvm->clear_nodes();
 }
 void Nvm::init()
 {
@@ -548,7 +545,11 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
     }
 
     case WM_NCDESTROY: {
-
+        DeleteObject(g_nvm->m_headFont);
+        DeleteObject(g_nvm->m_15Font);
+        DeleteObject(g_nvm->m_18Font);
+        DeleteObject(g_nvm->m_20Font);
+        delete g_nvm;
         break;
     }
     }
