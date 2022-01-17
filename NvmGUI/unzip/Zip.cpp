@@ -4,9 +4,15 @@
 #include <shlobj.h>
 #pragma comment(lib, "unzip/zlib.lib")
 
-#define IsShiftJIS(x) ((BYTE)((x ^ 0x20) - 0xA1) <= 0x3B)
+bool UnzipCPP::m_shellapi = false;
 
-std::string WStringToString(std::wstring oWString)
+UnzipCPP::UnzipCPP()
+{
+}
+UnzipCPP::~UnzipCPP()
+{
+}
+std::string UnzipCPP::WStringToString(std::wstring oWString)
 {
     int iBufferSize = WideCharToMultiByte(CP_OEMCP, 0, oWString.c_str(), -1, (char*)NULL, 0, NULL, NULL);
     CHAR* cpMultiByte = new CHAR[iBufferSize];
@@ -15,11 +21,11 @@ std::string WStringToString(std::wstring oWString)
     delete[] cpMultiByte;
     return (oRet);
 }
-bool IsFileExist(const std::string& strFilename)
+bool UnzipCPP::IsFileExist(const std::string& strFilename)
 {
     return GetFileAttributesA(strFilename.c_str()) != 0xffffffff;
 }
-bool CreateDirectoryReflex(const std::string& strPath)
+bool UnzipCPP::CreateDirectoryReflex(const std::string& strPath)
 {
     const char* p = strPath.c_str();
     for (; *p; p += IsShiftJIS(*p) ? 2 : 1) {
@@ -34,7 +40,7 @@ bool CreateDirectoryReflex(const std::string& strPath)
 
     return true;
 }
-bool UnzipZlib(const std::string& strZipFilename, const std::string& strTargetPath)
+bool UnzipCPP::UnzipZlib(const std::string& strZipFilename, const std::string& strTargetPath)
 {
     unzFile hUnzip = unzOpen(strZipFilename.c_str());
     if (!hUnzip)
@@ -76,7 +82,7 @@ bool UnzipZlib(const std::string& strZipFilename, const std::string& strTargetPa
     unzClose(hUnzip);
     return true;
 }
-bool ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
+bool UnzipCPP::ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
 {
     IShellDispatch* pShellDisp;
     HRESULT hres = CoInitializeEx(0, COINIT_MULTITHREADED);
@@ -142,9 +148,9 @@ bool ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
 
     return true;
 }
-bool Unzip(const std::wstring& strZipFilename, const std::wstring& strTargetPath, bool shellapi)
+bool UnzipCPP::Unzip(const std::wstring& strZipFilename, const std::wstring& strTargetPath)
 {
-    if (shellapi) {
+    if (m_shellapi) {
         return ExtractZip(strZipFilename.c_str(), strTargetPath.c_str());
     } else {
         std::string mpath = WStringToString(strZipFilename);
@@ -153,7 +159,7 @@ bool Unzip(const std::wstring& strZipFilename, const std::wstring& strTargetPath
     }
     return false;
 }
-bool Unzip(const std::string& strZipFilename, const std::string& strTargetPath)
+bool UnzipCPP::Unzip(const std::string& strZipFilename, const std::string& strTargetPath)
 {
     return UnzipZlib(strZipFilename, strTargetPath);
 }

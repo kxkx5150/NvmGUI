@@ -40,5 +40,5 @@ private:
     BOOL check_exists_file(const TCHAR* path);
     BOOL remove_dir(bool x86 = false);
 
-    BOOL ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath);
 };
+

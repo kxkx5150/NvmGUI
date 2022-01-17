@@ -22,7 +22,6 @@ Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     m_root_dir = extpath;
     m_x86_dir = m_root_dir + L"node-" + m_version + L"-win-x86";
     m_x64_dir = m_root_dir + L"node-" + m_version + L"-win-x64";
-    
 }
 Node::~Node()
 {
@@ -79,7 +78,7 @@ void Node::download_node(bool x86)
     if (res == S_OK) {
         OutputDebugString(L"Ok\n");
 
-        Unzip(path, m_root_dir);
+        UnzipCPP::Unzip(path, m_root_dir);
         DeleteFile(path.c_str());
         m_nvm->add_installed_list(this, x86);
         OutputDebugString(L"end-----------\n");
