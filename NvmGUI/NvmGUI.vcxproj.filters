@@ -36,6 +36,9 @@
     <ClInclude Include="DownloadProgress.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Zip.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NvmGUI.cpp">
@@ -45,6 +48,9 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Nvm.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Zip.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

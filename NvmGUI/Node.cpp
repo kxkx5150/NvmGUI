@@ -7,9 +7,7 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "urlmon.lib")
-#include "unzip.h"
-#pragma comment(lib, "zlib.lib")
-
+#include "zip.h"
 
 Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     std::wstring security, std::wstring modules, HWND proghwnd)
@@ -27,8 +25,6 @@ Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     m_root_dir = extpath;
     m_x86_dir = m_root_dir + L"node-" + get_store_dirname(true);
     m_x64_dir = m_root_dir + L"node-" + get_store_dirname();
-
-    //unzOpen("C:\\Users\\kunim\\source\\repos\\NvmGUI\\NvmGUI\\zip.zip");
 }
 Node::~Node()
 {
@@ -94,6 +90,9 @@ void Node::download_node(bool x86)
 
     if (res == S_OK) {
         OutputDebugString(L"Ok\n");
+
+        //Unzip("C:\\Users\\kunim\\Downloads\\あ\\test4.zip", "C:\\Users\\kunim\\Downloads\\");
+
         ExtractZip(path.c_str(), m_root_dir.c_str());
         DeleteFile(path.c_str());
 
