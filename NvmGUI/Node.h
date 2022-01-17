@@ -1,7 +1,7 @@
 #pragma once
-#include "Nvm.h"
 #include <Windows.h>
 #include <string>
+#include "Nvm.h"
 
 class Nvm;
 class Node {
