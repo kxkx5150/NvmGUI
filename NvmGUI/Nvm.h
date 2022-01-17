@@ -60,6 +60,7 @@ public:
 
     void click_dllist_btn();
     void click_dlinstall_btn();
+    void click_delete_installed_btn();
 
     void add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstring ltsstr,
         std::wstring secstr, std::wstring modstr, bool x86);

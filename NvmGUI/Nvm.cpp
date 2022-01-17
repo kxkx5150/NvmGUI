@@ -212,12 +212,46 @@ void Nvm::click_dlinstall_btn()
     int idx = ListView_GetNextItem(m_dl_listview, -1, LVNI_SELECTED);
     ListView_SetItemState(m_dl_listview, -1, 0, LVIS_SELECTED);
     if (idx != -1) {
+        Node* node = m_current_dllist[idx];
+        bool x86 = idx % 2;
+        bool instcheck = false;
+
+        for (size_t i = 0; i < m_installed_list.size(); i++) {
+            Node* instnode = m_installed_list[i];
+            if (x86) {
+                instcheck = 0 == node->m_x86_dir.find(instnode->m_x86_dir) ? true : false;
+            } else {
+                instcheck = 0 == node->m_x64_dir.find(instnode->m_x64_dir) ? true : false;
+            }
+
+            if (instcheck) {
+                return;
+            }
+        }
+
         EnableWindow(m_dl_install_btn, FALSE);
         ULONG max = 1;
         ULONG cnt = 0;
         set_progress_value(max, cnt, NULL);
         int lstidx = idx / 2;
-        m_current_dllist[lstidx]->download_node(idx % 2);
+        BOOL rval = m_current_dllist[lstidx]->download_node(idx % 2);
+        if (!rval) {
+            EnableWindow(m_dl_install_btn, TRUE);
+        }
+    }
+}
+void Nvm::click_delete_installed_btn()
+{
+    int idx = SendMessage(m_installed_combobox, CB_GETCURSEL, 0, 0);
+    if (idx != -1) {
+        Node* node = m_installed_list[idx];
+        std::wstring archstr = node->m_install_arch; 
+        bool x86 = 0 == archstr.find(L"x86") ? true : false;
+        SendMessage(m_installed_combobox, CB_SETCURSEL, -1, 0);
+        SendMessage(m_installed_combobox, CB_DELETESTRING, idx, 0);
+        m_installed_list.erase(m_installed_list.begin() + idx);
+        node->remove_dir(x86);
+        delete node;
     }
 }
 HFONT Nvm::create_font(int fontsize)
@@ -529,6 +563,15 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         case IDC_DL_INSTALL: {
             g_nvm->click_dlinstall_btn();
         } break;
+
+        case IDC_INST_DELETE: {
+            g_nvm->click_delete_installed_btn();
+        } break;
+
+
+
+
+            
         }
     } break;
 

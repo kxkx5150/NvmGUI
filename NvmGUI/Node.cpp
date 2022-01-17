@@ -62,11 +62,11 @@ void callback_progress(ULONG& number_entry, ULONG& cont, char* filename)
 {
     g_nvm->set_progress_value(number_entry, cont, filename);
 }
-void Node::download_node(bool x86)
+BOOL Node::download_node(bool x86)
 {
     BOOL ichk = installed_check(x86);
     if (ichk)
-        return;
+        return FALSE;
 
     downloaded_check(x86);
     std::wstring url = get_download_url(x86);
@@ -86,7 +86,7 @@ void Node::download_node(bool x86)
         std::wstring secstr = this->m_security;
         std::wstring modstr = this->m_modules;
         g_nvm->add_installed_list(verstr, npmstr, ltsstr, secstr, modstr, x86);
-
+        return TRUE;
     } else if (res == E_OUTOFMEMORY) {
         OutputDebugString(L"Buffer length invalid, or insufficient memory\n");
     } else if (res == INET_E_DOWNLOAD_FAILURE) {
@@ -94,6 +94,7 @@ void Node::download_node(bool x86)
     } else {
         OutputDebugString(L"Other error:\n");
     }
+    return FALSE;
 }
 BOOL Node::installed_check(bool x86)
 {
@@ -103,20 +104,18 @@ BOOL Node::installed_check(bool x86)
     }
 
     if (check_exists_dir(rootpath.c_str())) {
+        //return TRUE;
+        //std::wstring fname = rootpath + L"\\node.exe";
+        //if (!check_exists_file(fname.c_str()))
+        //    return remove_dir(x86);
 
-        std::wstring fname = rootpath + L"\\node.exe";
-        if (!check_exists_file(fname.c_str()))
-            return remove_dir(x86);
+        //fname = rootpath + L"\\npm";
+        //if (!check_exists_file(fname.c_str()))
+        //    return remove_dir(x86);
 
-        fname = rootpath + L"\\npm";
-        if (!check_exists_file(fname.c_str()))
-            return remove_dir(x86);
-
-        fname = rootpath + L"\\node_modules\\npm\\bin";
-        if (!check_exists_dir(fname.c_str()))
-            return remove_dir(x86);
-
-        return TRUE;
+        //fname = rootpath + L"\\node_modules\\npm\\bin";
+        //if (!check_exists_dir(fname.c_str()))
+        //    return remove_dir(x86);
     }
     return FALSE;
 }
