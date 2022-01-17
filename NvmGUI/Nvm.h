@@ -18,7 +18,6 @@ class Nvm {
     HWND m_dl_listview = nullptr;
     HWND m_dl_combobox = nullptr;
     HWND m_dl_get_btn = nullptr;
-    HWND m_dl_install_btn = nullptr;
     HWND m_dl_progress = nullptr;
     HWND m_installed_combobox = nullptr;
     HWND m_installed_usebtn = nullptr;
@@ -40,6 +39,10 @@ class Nvm {
     std::wstring m_json_url = L"https://nodejs.org/dist/index.json";
 
 public:
+    HWND m_dl_install_btn = nullptr;
+
+
+public:
     void parse_available_list(json::value& jsonobj);
 
     Nvm(HWND hwnd, HINSTANCE hInst);
@@ -56,6 +59,8 @@ public:
     void click_dllist_btn();
     void click_dlinstall_btn();
     void add_installed_list(Node* node, bool x86);
+    void set_progress_value(ULONG& number_entry, ULONG& cont, char* filename);
+
 
 private:
     HFONT create_font(int fontsize);

@@ -40,17 +40,29 @@ bool UnzipCPP::CreateDirectoryReflex(const std::string& strPath)
 
     return true;
 }
-bool UnzipCPP::UnzipZlib(const std::string& strZipFilename, const std::string& strTargetPath)
+bool UnzipCPP::UnzipZlib(const std::string& strZipFilename, const std::string& strTargetPath,
+    void (*callback)(ULONG&, ULONG&, char*))
 {
     unzFile hUnzip = unzOpen(strZipFilename.c_str());
     if (!hUnzip)
         return false;
 
+    unz_global_info global_info;
+    if (unzGetGlobalInfo(hUnzip, &global_info) != UNZ_OK) {
+        unzClose(hUnzip);
+        return false;
+    }
+    ULONG number_entry = global_info.number_entry;
+    ULONG count = 0;
+
     do {
+        count++;
         char szConFilename[512];
         unz_file_info fileInfo;
         if (unzGetCurrentFileInfo(hUnzip, &fileInfo, szConFilename, sizeof szConFilename, NULL, 0, NULL, 0) != UNZ_OK)
             break;
+
+        callback(number_entry, count, szConFilename);
 
         int nLen = strlen(szConFilename);
         for (int i = 0; i < nLen; ++i) {
@@ -76,7 +88,6 @@ bool UnzipCPP::UnzipZlib(const std::string& strZipFilename, const std::string& s
         FlushFileBuffers(hFile);
         CloseHandle(hFile);
         unzCloseCurrentFile(hUnzip);
-
     } while (unzGoToNextFile(hUnzip) != UNZ_END_OF_LIST_OF_FILE);
 
     unzClose(hUnzip);
@@ -148,18 +159,20 @@ bool UnzipCPP::ExtractZip(const TCHAR* ZipPath, const TCHAR* OutPath)
 
     return true;
 }
-bool UnzipCPP::Unzip(const std::wstring& strZipFilename, const std::wstring& strTargetPath)
+bool UnzipCPP::Unzip(const std::wstring& strZipFilename, const std::wstring& strTargetPath,
+    void (*callback)(ULONG&, ULONG&, char*))
 {
     if (m_shellapi) {
         return ExtractZip(strZipFilename.c_str(), strTargetPath.c_str());
     } else {
         std::string mpath = WStringToString(strZipFilename);
         std::string mrootdir = WStringToString(strTargetPath);
-        return UnzipZlib(mpath, mrootdir);
+        return UnzipZlib(mpath, mrootdir, callback);
     }
     return false;
 }
-bool UnzipCPP::Unzip(const std::string& strZipFilename, const std::string& strTargetPath)
+bool UnzipCPP::Unzip(const std::string& strZipFilename, const std::string& strTargetPath,
+    void (*callback)(ULONG&, ULONG&, char*))
 {
-    return UnzipZlib(strZipFilename, strTargetPath);
+    return UnzipZlib(strZipFilename, strTargetPath, callback);
 }

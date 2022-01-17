@@ -4,6 +4,7 @@
 #include "Nvm.h"
 
 class Nvm;
+
 class Node {
 public:
     std::wstring m_version = nullptr;
@@ -13,7 +14,6 @@ public:
     std::wstring m_modules = nullptr;
 
 private:
-    Nvm* m_nvm = nullptr;
     HWND m_progresshwnd = nullptr;
 
     std::wstring m_x86 = L"win-x86.zip";
@@ -39,6 +39,7 @@ private:
     BOOL check_exists_dir(const TCHAR* path);
     BOOL check_exists_file(const TCHAR* path);
     BOOL remove_dir(bool x86 = false);
+
 
 };
 

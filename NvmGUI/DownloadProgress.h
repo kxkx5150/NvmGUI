@@ -54,7 +54,7 @@ public:
     virtual HRESULT __stdcall OnProgress(ULONG ulProgress, ULONG ulProgressMax, ULONG ulStatusCode, LPCWSTR szStatusText)
     {
         if (0 < ulProgressMax) {
-            int val = ulProgress / ulProgressMax * 100;
+            int val = ulProgress * 100 / ulProgressMax;
             SendMessage(m_progress, PBM_SETPOS, (WPARAM)val, 0);
         }
         return S_OK;

@@ -144,7 +144,11 @@ void Nvm::parse_available_list(json::value& jsonobj)
         }
     }
 }
-
+void Nvm::set_progress_value(ULONG& number_entry, ULONG& cont, char* filename)
+{
+    int val = cont * 100 / number_entry;
+    SendMessage(m_dl_progress, PBM_SETPOS, (WPARAM)val, 0);
+}
 void Nvm::add_installed_list(Node* node, bool x86)
 {
     m_installed_list.push_back(node);
@@ -156,6 +160,7 @@ void Nvm::add_installed_list(Node* node, bool x86)
     }
 
     SendMessage(m_installed_combobox, CB_ADDSTRING, 1, (LPARAM)lbl.c_str());
+    EnableWindow(g_nvm->m_dl_install_btn, TRUE);
 }
 int Nvm::get_nodes_len()
 {
@@ -307,7 +312,7 @@ HWND Nvm::create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight,
 {
     return CreateWindowEx(0,
         PROGRESS_CLASS, TEXT(""),
-        WS_CHILD | WS_VISIBLE | PBS_SMOOTH ,
+        WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
         nX, nY, nWidth, nHeight,
         hParent, (HMENU)id, m_hInst, NULL);
 }
@@ -362,6 +367,10 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         } break;
 
         case IDC_DL_INSTALL: {
+            EnableWindow(g_nvm->m_dl_install_btn, FALSE);
+            ULONG max = 1;
+            ULONG cnt = 0;
+            g_nvm->set_progress_value(max, cnt, NULL);
             g_nvm->click_dlinstall_btn();
         } break;
         }

@@ -6,16 +6,18 @@
 #pragma comment(lib, "urlmon.lib")
 #include "unzip/zip.h"
 
+Nvm* m_nvm = nullptr;
+
 Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     std::wstring security, std::wstring modules, HWND proghwnd)
-    : m_nvm(nvm)
-    , m_version(version)
+    : m_version(version)
     , m_npm(npm)
     , m_lts(lts)
     , m_security(security)
     , m_modules(modules)
     , m_progresshwnd(proghwnd)
 {
+    m_nvm = nvm;
     TCHAR extpath[MAX_PATH];
     GetCurrentDirectory(MAX_PATH, extpath);
     wsprintf(extpath, TEXT("%s\\nodes\\"), extpath);
@@ -57,6 +59,11 @@ std::wstring Node::get_store_filename(bool x86)
     }
     return fname;
 }
+
+void callback_progress(ULONG& number_entry, ULONG& cont, char* filename)
+{
+    m_nvm->set_progress_value(number_entry, cont, filename);
+}
 void Node::download_node(bool x86)
 {
     BOOL ichk = installed_check(x86);
@@ -78,9 +85,11 @@ void Node::download_node(bool x86)
     if (res == S_OK) {
         OutputDebugString(L"Ok\n");
 
-        UnzipCPP::Unzip(path, m_root_dir);
+        UnzipCPP::Unzip(path, m_root_dir, callback_progress);
+
         DeleteFile(path.c_str());
         m_nvm->add_installed_list(this, x86);
+
         OutputDebugString(L"end-----------\n");
 
     } else if (res == E_OUTOFMEMORY) {
