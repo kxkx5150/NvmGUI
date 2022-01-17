@@ -67,30 +67,27 @@ void callback_progress(ULONG& number_entry, ULONG& cont, char* filename)
 void Node::download_node(bool x86)
 {
     BOOL ichk = installed_check(x86);
-    if (ichk) {
+    if (ichk)
         return;
-    }
-    downloaded_check(x86);
 
-    std::wstring url = get_download_url();
+    downloaded_check(x86);
+    std::wstring url = get_download_url(x86);
     std::wstring path = get_store_path(x86);
 
-    OutputDebugString(L"start-----------");
     DownloadProgress progress;
     progress.SetHWND(m_progresshwnd);
-
     HRESULT res = URLDownloadToFile(NULL, url.c_str(), path.c_str(), 0,
         static_cast<IBindStatusCallback*>(&progress));
 
     if (res == S_OK) {
-        OutputDebugString(L"Ok\n");
-
         UnzipCPP::Unzip(path, m_root_dir, callback_progress);
-
         DeleteFile(path.c_str());
-        m_nvm->add_installed_list(this, x86);
-
-        OutputDebugString(L"end-----------\n");
+        std::wstring verstr = this->m_version;
+        std::wstring npmstr = this->m_npm;
+        std::wstring ltsstr = this->m_lts;
+        std::wstring secstr = this->m_security;
+        std::wstring modstr = this->m_modules;
+        m_nvm->add_installed_list(verstr, npmstr, ltsstr, secstr, modstr, x86);
 
     } else if (res == E_OUTOFMEMORY) {
         OutputDebugString(L"Buffer length invalid, or insufficient memory\n");

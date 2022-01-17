@@ -3,6 +3,7 @@
 #include <CommCtrl.h>
 #include <crtdbg.h>
 #include <shlwapi.h>
+#include <tchar.h>
 #pragma comment(lib, "Comctl32.lib")
 
 LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
@@ -18,9 +19,10 @@ Nvm::Nvm(HWND hwnd, HINSTANCE hInst)
 }
 Nvm::~Nvm()
 {
-    clear_nodes();
     delete m_15Font;
     delete m_18Font;
+    delete m_20Font;
+    delete m_headFont;
 }
 void Nvm::init()
 {
@@ -42,25 +44,36 @@ void Nvm::clear_nodes()
     m_lts_nodes.clear();
     m_sec_nodes.clear();
     m_lts_sec_nodes.clear();
+
+    for (size_t i = 0; i < m_installed_list.size(); i++) {
+        delete m_installed_list[i];
+    }
+    m_installed_list.clear();
 }
 void Nvm::download_available_list()
 {
-    http_client client(m_json_url);
-    pplx::task<web::http::http_response> resp = client.request(web::http::methods::GET);
-    resp.then([=](pplx::task<web::http::http_response> task) {
-            web::http::http_response response = task.get();
-            if (response.status_code() != status_codes::OK) {
-                throw std::runtime_error("Returned " + std::to_string(response.status_code()));
-            }
-            return response.extract_json();
-        })
-        .then([=](json::value jo) {
-            parse_available_list(jo);
-        });
-    try {
-        resp.wait();
-    } catch (const std::exception& e) {
-        _RPTN(_CRT_WARN, "Error exception:%s\n", e.what());
+    if (m_dl_ok) {
+        click_dllist_btn();
+    } else {
+        m_dl_ok = true;
+        http_client client(m_json_url);
+        pplx::task<web::http::http_response> resp = client.request(web::http::methods::GET);
+        resp.then([=](pplx::task<web::http::http_response> task) {
+                web::http::http_response response = task.get();
+                if (response.status_code() != status_codes::OK) {
+                    throw std::runtime_error("Returned " + std::to_string(response.status_code()));
+                }
+                return response.extract_json();
+            })
+            .then([=](json::value jo) {
+                parse_available_list(jo);
+                click_dllist_btn();
+            });
+        try {
+            resp.wait();
+        } catch (const std::exception& e) {
+            _RPTN(_CRT_WARN, "Error exception:%s\n", e.what());
+        }
     }
 }
 void Nvm::parse_available_list(json::value& jsonobj)
@@ -149,16 +162,27 @@ void Nvm::set_progress_value(ULONG& number_entry, ULONG& cont, char* filename)
     int val = cont * 100 / number_entry;
     SendMessage(m_dl_progress, PBM_SETPOS, (WPARAM)val, 0);
 }
-void Nvm::add_installed_list(Node* node, bool x86)
+void Nvm::add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstring ltsstr,
+    std::wstring secstr, std::wstring modstr, bool x86)
 {
-    m_installed_list.push_back(node);
+    Node* node = new Node(
+        this,
+        verstr,
+        npmstr,
+        ltsstr,
+        secstr,
+        modstr,
+        m_dl_progress);
+
     std::wstring lbl = node->m_version + L"   ";
     if (x86) {
         lbl += L"x86";
+        node->m_install_arch = L"x86";
     } else {
         lbl += L"x64";
+        node->m_install_arch = L"x64";
     }
-
+    m_installed_list.push_back(node);
     SendMessage(m_installed_combobox, CB_ADDSTRING, 1, (LPARAM)lbl.c_str());
     EnableWindow(g_nvm->m_dl_install_btn, TRUE);
 }
@@ -359,7 +383,137 @@ void Nvm::create_control()
     SendMessage(m_dl_combobox, CB_ADDSTRING, 3, (LPARAM)L"Security");
     SendMessage(m_dl_combobox, CB_ADDSTRING, 4, (LPARAM)L"LTS & Security");
     SendMessage(m_dl_combobox, CB_SETCURSEL, 0, 0);
+
+    read_setting_csv();
 }
+void Nvm::exe_directory_path(TCHAR* path)
+{
+    GetModuleFileName(NULL, path, MAX_PATH);
+    TCHAR* ptmp = _tcsrchr(path, _T('\\'));
+    if (ptmp != NULL) {
+        ptmp = _tcsinc(ptmp);
+        *ptmp = '\0';
+    }
+}
+void Nvm::write_setting_csv()
+{
+    std::wstring argstr = L"";
+    for (auto&& node : m_installed_list) {
+        argstr += node->m_version;
+        argstr += L",";
+        argstr += node->m_npm;
+        argstr += L",";
+        argstr += node->m_lts;
+        argstr += L",";
+        argstr += node->m_security;
+        argstr += L",";
+        argstr += node->m_modules;
+        argstr += L",";
+        argstr += node->m_install_arch;
+        argstr += L"\n";
+    }
+
+    int strlen = argstr.length() + 10;
+    TCHAR* filename = new TCHAR[MAX_PATH];
+    TCHAR* buftmp = new TCHAR[strlen];
+    wcscpy_s(filename, MAX_PATH, L"settings.csv");
+    wcscpy_s(buftmp, strlen, argstr.c_str());
+    write_file(filename, buftmp);
+    delete[] filename;
+    delete[] buftmp;
+}
+int Nvm::write_file(TCHAR* filename, TCHAR* args)
+{
+    TCHAR path[MAX_PATH] = { '\0' };
+    exe_directory_path(path);
+    wcscat_s(path, MAX_PATH, filename);
+    wcscpy_s(filename, MAX_PATH, path);
+
+    HANDLE hFile = CreateFile(path,
+        GENERIC_WRITE, 0, NULL,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(hFile);
+
+    hFile = CreateFile(path,
+        GENERIC_WRITE, 0, NULL,
+        TRUNCATE_EXISTING,
+        FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return 0;
+
+    DWORD written;
+    WriteFile(hFile, args, _tcslen(args) * sizeof(TCHAR), &written, NULL);
+    CloseHandle(hFile);
+    return 0;
+}
+TCHAR* Nvm::read_file(const TCHAR* filename)
+{
+    TCHAR m_Path[MAX_PATH] = { '\0' };
+    exe_directory_path(m_Path);
+    wcscat_s(m_Path, MAX_PATH, filename);
+
+    HANDLE hFile = CreateFile(m_Path,
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return 0;
+
+    DWORD dfsize = ::GetFileSize(hFile, NULL);
+    TCHAR* argstmp = new TCHAR[dfsize + 10];
+    DWORD wReadSize;
+    BOOL ret = ReadFile(hFile, argstmp, dfsize, &wReadSize, NULL);
+    CloseHandle(hFile);
+    if (ret)
+        return argstmp;
+    else {
+        return nullptr;
+    }
+}
+void Nvm::read_setting_csv()
+{
+    TCHAR* stradd = read_file(L"settings.csv");
+    if (!stradd)
+        return;
+
+    std::wstring txt = stradd;
+    std::vector<std::wstring> str = split(txt, '\n');
+    size_t len = str.size();
+
+    for (size_t i = 0; i < len; i++) {
+        std::vector<std::wstring> strvec = split(str.at(i), ',');
+        int csvlen = strvec.size();
+        if (csvlen < 6)
+            continue;
+
+        std::wstring verstr = strvec.at(0);
+        std::wstring npmstr = strvec.at(1);
+        std::wstring ltsstr = strvec.at(2);
+        std::wstring secstr = strvec.at(3);
+        std::wstring modstr = strvec.at(4);
+        std::wstring archstr = strvec.at(5);
+        bool x86 = 0 == archstr.find(L"x86") ? true : false;
+        add_installed_list(verstr, npmstr, ltsstr, secstr, modstr, x86);
+    }
+    delete[] stradd;
+}
+std::vector<std::wstring> Nvm::split(std::wstring& input, TCHAR delimiter)
+{
+    std::wistringstream stream(input);
+    std::wstring field;
+    std::vector<std::wstring> result;
+    while (getline(stream, field, delimiter)) {
+        result.push_back(field);
+    }
+    return result;
+}
+
 LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
     LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {
@@ -368,7 +522,7 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         switch (LOWORD(wParam)) {
 
         case IDC_DL_BUTTON: {
-            g_nvm->click_dllist_btn();
+            g_nvm->download_available_list();
         } break;
 
         case IDC_DL_INSTALL: {
@@ -386,11 +540,17 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
             SetBkColor(hdcStatic, RGB(0, 230, 120));
             return (INT_PTR)hBrush;
         }
-    }
+    } break;
 
-    case WM_NCDESTROY:
+    case WM_NCCREATE: {
         break;
     }
 
+    case WM_NCDESTROY: {
+        g_nvm->write_setting_csv();
+        g_nvm->clear_nodes();
+        break;
+    }
+    }
     return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }

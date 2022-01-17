@@ -104,7 +104,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         Nvm* nvm = nullptr;
         nvm = new Nvm(hWnd, hInst);
         nvm->create_control();
-        nvm->download_available_list();
     } break;
 
     case WM_DESTROY:

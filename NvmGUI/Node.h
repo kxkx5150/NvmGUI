@@ -12,6 +12,7 @@ public:
     std::wstring m_lts = nullptr;
     std::wstring m_security = nullptr;
     std::wstring m_modules = nullptr;
+    std::wstring m_install_arch = L"";
 
 private:
     HWND m_progresshwnd = nullptr;

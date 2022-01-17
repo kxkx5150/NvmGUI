@@ -33,10 +33,11 @@ class Nvm {
     std::vector<Node*> m_sec_nodes;
     std::vector<Node*> m_lts_sec_nodes;
     std::vector<Node*> m_current_dllist;
-
     std::vector<Node*> m_installed_list;
 
     std::wstring m_json_url = L"https://nodejs.org/dist/index.json";
+
+    bool m_dl_ok = false;
 
 public:
     HWND m_dl_install_btn = nullptr;
@@ -58,8 +59,12 @@ public:
 
     void click_dllist_btn();
     void click_dlinstall_btn();
-    void add_installed_list(Node* node, bool x86);
+
+    void add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstring ltsstr,
+        std::wstring secstr, std::wstring modstr, bool x86);
+
     void set_progress_value(ULONG& number_entry, ULONG& cont, char* filename);
+    void write_setting_csv();
 
 
 private:
@@ -73,5 +78,10 @@ private:
     HWND create_button(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);
     HWND create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
     HWND create_statictxt(HWND hParent, int nX, int nY, int nWidth, int nHeight,int id,  const TCHAR* txt);
+    int write_file(TCHAR* filename, TCHAR* args);
+    void exe_directory_path(TCHAR* path);
+    void read_setting_csv();
+    TCHAR* read_file(const TCHAR* filename);
+    std::vector<std::wstring> split(std::wstring& input, TCHAR delimiter);
 
 };
