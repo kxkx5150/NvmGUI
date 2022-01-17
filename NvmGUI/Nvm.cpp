@@ -185,7 +185,12 @@ void Nvm::click_dllist_btn()
 void Nvm::click_dlinstall_btn()
 {
     int idx = ListView_GetNextItem(m_dl_listview, -1, LVNI_SELECTED);
+    ListView_SetItemState(m_dl_listview, -1, 0, LVIS_SELECTED);
     if (idx != -1) {
+        EnableWindow(m_dl_install_btn, FALSE);
+        ULONG max = 1;
+        ULONG cnt = 0;
+        set_progress_value(max, cnt, NULL);
         int lstidx = idx / 2;
         m_current_dllist[lstidx]->download_node(idx % 2);
     }
@@ -367,10 +372,6 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         } break;
 
         case IDC_DL_INSTALL: {
-            EnableWindow(g_nvm->m_dl_install_btn, FALSE);
-            ULONG max = 1;
-            ULONG cnt = 0;
-            g_nvm->set_progress_value(max, cnt, NULL);
             g_nvm->click_dlinstall_btn();
         } break;
         }
