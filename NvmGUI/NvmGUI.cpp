@@ -2,6 +2,8 @@
 #include "NvmGUI.h"
 #include "Nvm.h"
 #include "framework.h"
+#include <shlobj.h>
+#include <tchar.h>
 
 #define MAX_LOADSTRING 100
 
@@ -63,9 +65,9 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
     hInst = hInstance; // グローバル変数にインスタンス ハンドルを格納する
-    HWND hWnd = CreateWindowW(szWindowClass, szTitle, 
+    HWND hWnd = CreateWindowW(szWindowClass, szTitle,
         WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX,
-        CW_USEDEFAULT, 0, 420, 550, 
+        CW_USEDEFAULT, 0, 420, 550,
         nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd) {
@@ -90,9 +92,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
+
+        case ID_MENU_OPENSTOREFOLDER: {
+            TCHAR path[MAX_PATH];
+            SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, NULL, path);
+            wsprintf(path, TEXT("%s\\nvm_gui\\"), path);
+            ShellExecute(NULL, L"open", path, NULL, NULL, SW_SHOWDEFAULT);
+        } break;
+
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
+
     } break;
     case WM_PAINT: {
         PAINTSTRUCT ps;
