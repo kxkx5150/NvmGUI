@@ -5,6 +5,8 @@
 #include <urlmon.h>
 #pragma comment(lib, "urlmon.lib")
 #include "unzip/zip.h"
+#include <shlobj.h>
+
 
 extern Nvm* g_nvm;
 Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
@@ -16,10 +18,10 @@ Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     , m_modules(modules)
     , m_progresshwnd(proghwnd)
 {
-    TCHAR extpath[MAX_PATH];
-    GetCurrentDirectory(MAX_PATH, extpath);
-    wsprintf(extpath, TEXT("%s\\nodes\\"), extpath);
-    m_root_dir = extpath;
+    TCHAR path[MAX_PATH];
+    SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, NULL, path);
+    wsprintf(path, TEXT("%s\\nvm_gui\\"), path);
+    m_root_dir = path;
     m_x86_dir = m_root_dir + L"node-" + m_version + L"-win-x86";
     m_x64_dir = m_root_dir + L"node-" + m_version + L"-win-x64";
 }

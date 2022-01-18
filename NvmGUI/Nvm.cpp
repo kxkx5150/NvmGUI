@@ -4,6 +4,7 @@
 #include <crtdbg.h>
 #include <shlwapi.h>
 #include <tchar.h>
+#include <shlobj.h>
 #pragma comment(lib, "Comctl32.lib")
 
 LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
@@ -26,8 +27,8 @@ Nvm::~Nvm()
 void Nvm::init()
 {
     TCHAR path[MAX_PATH];
-    GetCurrentDirectory(MAX_PATH, path);
-    wsprintf(path, TEXT("%s\\nodes"), path);
+    SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, NULL, path);
+    wsprintf(path, TEXT("%s\\nvm_gui\\"), path);
     if (!PathFileExists(path)) {
         if (!CreateDirectory(path, NULL)) {
             OutputDebugString(L"error");
@@ -179,10 +180,19 @@ void Nvm::add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstr
     if (x86) {
         lbl += L"x86";
         node->m_install_arch = L"x86";
+        if (!node->check_exists_dir(node->m_x86_dir.c_str())) {
+            delete node;
+            return;
+        }
     } else {
         lbl += L"x64";
         node->m_install_arch = L"x64";
+        if (!node->check_exists_dir(node->m_x64_dir.c_str())) {
+            delete node;
+            return;
+        }
     }
+
     m_installed_list.push_back(node);
     SendMessage(m_installed_combobox, CB_ADDSTRING, 1, (LPARAM)lbl.c_str());
     EnableWindow(g_nvm->m_dl_install_btn, TRUE);
@@ -548,7 +558,6 @@ std::vector<std::wstring> Nvm::split(std::wstring& input, TCHAR delimiter)
     }
     return result;
 }
-
 LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
     LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {

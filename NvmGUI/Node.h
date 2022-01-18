@@ -1,7 +1,7 @@
 #pragma once
+#include "Nvm.h"
 #include <Windows.h>
 #include <string>
-#include "Nvm.h"
 
 class Nvm;
 
@@ -25,7 +25,6 @@ private:
 
     std::wstring m_root_dir = L"";
 
-
 public:
     Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
         std::wstring security, std::wstring modules, HWND proghwnd);
@@ -37,13 +36,10 @@ public:
     BOOL download_node(bool x86 = false);
     BOOL remove_dir(bool x86 = false);
 
+    BOOL check_exists_dir(const TCHAR* path);
 
 private:
     BOOL installed_check(bool x86);
     void downloaded_check(bool x86);
-    BOOL check_exists_dir(const TCHAR* path);
     BOOL check_exists_file(const TCHAR* path);
-
-
 };
-
