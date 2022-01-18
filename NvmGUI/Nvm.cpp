@@ -6,6 +6,9 @@
 #include <tchar.h>
 #include <shlobj.h>
 #pragma comment(lib, "Comctl32.lib")
+#include "PointInfo.h"
+
+
 
 LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
     LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
@@ -33,6 +36,16 @@ void Nvm::init()
         if (!CreateDirectory(path, NULL)) {
             OutputDebugString(L"error");
         }
+    }
+
+    LPCWSTR pFilePath = L"C:\\Program Files\\nodejs";
+    ULONG qReparseTag = 0;
+    std::wstring strLinkPath = L"";
+    std::wstring strDispName = L"";
+    GetReparsePointInfo(pFilePath, qReparseTag, strLinkPath, strDispName);
+    if (IO_REPARSE_TAG_SYMLINK) {
+        OutputDebugString(L"");
+
     }
 }
 void Nvm::clear_nodes()
@@ -431,6 +444,11 @@ void Nvm::create_control()
 
     read_setting_csv();
 }
+void Nvm::click_use_btn()
+{
+
+
+}
 void Nvm::exe_directory_path(TCHAR* path)
 {
     GetModuleFileName(NULL, path, MAX_PATH);
@@ -577,6 +595,9 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
             g_nvm->click_delete_installed_btn();
         } break;
 
+        case IDC_INST_USE: {
+            g_nvm->click_use_btn();
+        } break;
 
 
 
