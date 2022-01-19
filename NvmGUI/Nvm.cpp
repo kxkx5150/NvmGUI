@@ -1,14 +1,14 @@
-﻿#include "Nvm.h"
+﻿//#define _CRT_SECURE_NO_WARNINGS
+
+#include "Nvm.h"
 #include "Resource.h"
 #include <CommCtrl.h>
 #include <crtdbg.h>
+#include <shlobj.h>
 #include <shlwapi.h>
 #include <tchar.h>
-#include <shlobj.h>
 #pragma comment(lib, "Comctl32.lib")
 #include "PointInfo.h"
-
-
 
 LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
     LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
@@ -36,16 +36,6 @@ void Nvm::init()
         if (!CreateDirectory(path, NULL)) {
             OutputDebugString(L"error");
         }
-    }
-
-    LPCWSTR pFilePath = L"C:\\Program Files\\nodejs";
-    ULONG qReparseTag = 0;
-    std::wstring strLinkPath = L"";
-    std::wstring strDispName = L"";
-    GetReparsePointInfo(pFilePath, qReparseTag, strLinkPath, strDispName);
-    if (IO_REPARSE_TAG_SYMLINK) {
-        OutputDebugString(L"");
-
     }
 }
 void Nvm::clear_nodes()
@@ -208,7 +198,7 @@ void Nvm::add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstr
 
     m_installed_list.push_back(node);
     SendMessage(m_installed_combobox, CB_ADDSTRING, 1, (LPARAM)lbl.c_str());
-    EnableWindow(g_nvm->m_dl_install_btn, TRUE);
+    EnableWindow(m_dl_install_btn, TRUE);
 }
 int Nvm::get_nodes_len()
 {
@@ -268,7 +258,7 @@ void Nvm::click_delete_installed_btn()
     int idx = SendMessage(m_installed_combobox, CB_GETCURSEL, 0, 0);
     if (idx != -1) {
         Node* node = m_installed_list[idx];
-        std::wstring archstr = node->m_install_arch; 
+        std::wstring archstr = node->m_install_arch;
         bool x86 = 0 == archstr.find(L"x86") ? true : false;
         SendMessage(m_installed_combobox, CB_SETCURSEL, -1, 0);
         SendMessage(m_installed_combobox, CB_DELETESTRING, idx, 0);
@@ -415,7 +405,7 @@ void Nvm::create_control()
 {
     InitCommonControls();
 
-    m_headFont = create_font(24);
+    m_headFont = create_font(23);
     m_20Font = create_font(20);
     m_18Font = create_font(18);
     m_15Font = create_font(15);
@@ -446,8 +436,177 @@ void Nvm::create_control()
 }
 void Nvm::click_use_btn()
 {
+    ULONG max = 10;
+    ULONG cnt = 0;
+    set_progress_value(max, cnt, NULL);
 
+    int idx = SendMessage(m_installed_combobox, CB_GETCURSEL, 0, 0);
+    if (idx != -1) {
+        EnableWindow(m_installed_usebtn, FALSE);
 
+        Node* instnode = m_installed_list[idx];
+        Sleep(50);
+        cnt = 2;
+        set_progress_value(max, cnt, NULL);
+
+        if (check_env_path()) {
+            Sleep(50);
+            cnt = 4;
+            set_progress_value(max, cnt, NULL);
+
+            ULONG qReparseTag = 0;
+            std::wstring strLinkPath = L"";
+            std::wstring strDispName = L"";
+            GetReparsePointInfo(m_node_path.c_str(), qReparseTag, strLinkPath, strDispName);
+
+            if (IO_REPARSE_TAG_SYMLINK == qReparseTag) {
+                RemoveDirectory(m_node_path.c_str());
+                create_symbolic_link(instnode);
+            } else {
+                if (PathFileExists(m_node_path.c_str()) && PathIsDirectory(m_node_path.c_str())) {
+                    if (move_original_node()) {
+                        create_symbolic_link(instnode);
+                    }
+                } else {
+                    create_symbolic_link(instnode);
+                }
+            }
+
+            Sleep(50);
+            cnt = 7;
+            set_progress_value(max, cnt, NULL);
+            Sleep(50);
+            cnt = 10;
+            set_progress_value(max, cnt, NULL);
+        }
+    }
+    EnableWindow(m_installed_usebtn, TRUE);
+}
+bool Nvm::move_original_node()
+{
+    std::wstring prefix = L"";
+    std::wstring distpath = L"";
+    std::wstring fname = L"";
+
+    int idx = m_node_path.find_last_of(L"\\");
+    idx++;
+    fname = m_node_path.substr(idx);
+    distpath = m_node_path.substr(0, idx);
+
+    for (size_t i = 0; i < 100; i++) {
+        prefix += L"_";
+        std::wstring path = distpath + fname + prefix + L"original";
+        if (PathFileExists(path.c_str()) && PathIsDirectory(path.c_str())) {
+            continue;
+        } else {
+            MoveFile(m_node_path.c_str(), path.c_str());
+            return true;
+        }
+    }
+    return false;
+}
+bool Nvm::check_env_path()
+{
+    TCHAR* buf = nullptr;
+    size_t sz = 0;
+    if (_wdupenv_s(&buf, &sz, L"PATH") == 0 && buf != nullptr) {
+        std::wstring pathstr = buf;
+        std::wstring nodpath = m_node_path;
+        std::transform(pathstr.begin(), pathstr.end(), pathstr.begin(), std::toupper);
+        std::transform(nodpath.begin(), nodpath.end(), nodpath.begin(), std::toupper);
+
+        if (std::wstring::npos == pathstr.find(nodpath) && std::wstring::npos == pathstr.find(L"\%NVM_GUI_SYMLINK\%")) {
+            free(buf);
+            if (false) {
+                ShellExecute(NULL, L"runas", L"cmd.exe", L"/C setreg.bat", NULL, SW_HIDE);
+            } else {
+                create_reg_symkey();
+                append_env_path();
+            }
+            MessageBox(NULL, TEXT("Please restart Windows\r\n set PATH environment variable"),
+                TEXT("Please restart Windows"), MB_ICONINFORMATION);
+            DWORD_PTR dwReturnValue;
+            LRESULT Ret = SendMessageTimeout(
+                HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)TEXT("Environment"),
+                SMTO_ABORTIFHUNG, 5000, &dwReturnValue);
+            return true;
+        } else {
+            free(buf);
+            return true;
+        }
+    }
+
+    return false;
+}
+bool Nvm::create_reg_symkey()
+{
+    std::wstring rootkeystr = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    std::wstring keystr = L"NVM_GUI_SYMLINK";
+    std::wstring valstr = L"C:\\Program Files\\nodejs";
+
+    HKEY newValue;
+    if (RegOpenKey(HKEY_LOCAL_MACHINE, rootkeystr.c_str(), &newValue) != ERROR_SUCCESS) {
+        return FALSE;
+    }
+
+    DWORD pathLenInBytes = valstr.size() * sizeof(wchar_t);
+    if (RegSetValueEx(newValue,
+            keystr.c_str(),
+            0, REG_SZ,
+            (LPBYTE)valstr.c_str(),
+            pathLenInBytes)
+        != ERROR_SUCCESS) {
+        RegCloseKey(newValue);
+        return FALSE;
+    }
+    RegCloseKey(newValue);
+    return TRUE;
+}
+bool Nvm::append_env_path()
+{
+    std::wstring rootkeystr = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    std::wstring valstr = L"\%NVM_GUI_SYMLINK\%;";
+
+    HKEY newValue;
+    if (RegOpenKey(HKEY_LOCAL_MACHINE, rootkeystr.c_str(), &newValue) != ERROR_SUCCESS) {
+        return FALSE;
+    }
+
+    DWORD dwType = REG_SZ;
+    TCHAR data[1024] = {};
+    DWORD dwSize = sizeof(data);
+    if (RegQueryValueEx(newValue, L"PATH", NULL, &dwType, (LPBYTE)data, &dwSize) == ERROR_SUCCESS) {
+        std::wstring environment = valstr;
+        environment += data;
+
+        DWORD pathLenInBytes = environment.size() * sizeof(wchar_t);
+        if (RegSetValueEx(newValue,
+                L"PATH",
+                0, REG_SZ,
+                (LPBYTE)environment.c_str(),
+                pathLenInBytes)
+            != ERROR_SUCCESS) {
+            RegCloseKey(newValue);
+            return FALSE;
+        }
+
+        DWORD_PTR dwReturnValue;
+        LRESULT Ret = SendMessageTimeout(
+            HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)TEXT("Environment"),
+            SMTO_ABORTIFHUNG, 5000, &dwReturnValue);
+    }
+    RegCloseKey(newValue);
+    return TRUE;
+}
+void Nvm::create_symbolic_link(Node* instnode)
+{
+    if (instnode->m_install_arch.find(L"x86") == 0) {
+        int rt = CreateSymbolicLink(m_node_path.c_str(),
+            instnode->m_x86_dir.c_str(), 1);
+    } else {
+        int rt = CreateSymbolicLink(m_node_path.c_str(),
+            instnode->m_x64_dir.c_str(), 1);
+    }
 }
 void Nvm::exe_directory_path(TCHAR* path)
 {
@@ -598,10 +757,6 @@ LRESULT CALLBACK SubclassWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         case IDC_INST_USE: {
             g_nvm->click_use_btn();
         } break;
-
-
-
-            
         }
     } break;
 

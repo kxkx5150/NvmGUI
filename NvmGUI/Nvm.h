@@ -32,6 +32,7 @@ class Nvm {
     std::vector<Node*> m_installed_list;
 
     std::wstring m_json_url = L"https://nodejs.org/dist/index.json";
+    std::wstring m_node_path = L"C:\\Program Files\\nodejs";
 
     bool m_dl_ok = false;
 
@@ -86,4 +87,14 @@ private:
     void read_setting_csv();
     TCHAR* read_file(const TCHAR* filename);
     std::vector<std::wstring> split(std::wstring& input, TCHAR delimiter);
+
+    void create_symbolic_link(Node* instnode);
+
+    bool check_env_path();
+    bool create_reg_symkey();
+    bool append_env_path();
+    bool move_original_node();
+
+
 };
+
