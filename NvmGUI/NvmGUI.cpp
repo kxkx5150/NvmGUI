@@ -93,6 +93,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             DestroyWindow(hWnd);
             break;
 
+        case ID_MENU_DISABLED: {
+            HMENU hmenu = GetMenu(hWnd);
+            UINT uState = GetMenuState(hmenu, ID_MENU_DISABLED, MF_BYCOMMAND);
+            if (uState & MFS_CHECKED) {
+                CheckMenuItem(hmenu, ID_MENU_DISABLED, MF_BYCOMMAND | MFS_UNCHECKED);
+                g_nvm->toggle_disabled(false);
+            } else {
+                CheckMenuItem(hmenu, ID_MENU_DISABLED, MF_BYCOMMAND | MFS_CHECKED);
+                g_nvm->toggle_disabled(true);
+            }
+        } break;
+
         case ID_MENU_OPENSTOREFOLDER: {
             TCHAR path[MAX_PATH];
             SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, NULL, path);

@@ -70,6 +70,7 @@ public:
 
     void set_progress_value(ULONG& number_entry, ULONG& cont, char* filename);
     void write_setting_csv();
+    void toggle_disabled(bool checked);
 
 private:
     HFONT create_font(int fontsize);
@@ -94,4 +95,9 @@ private:
     bool create_reg_symkey();
     bool append_env_path();
     bool move_original_node();
+
+    bool set_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::wstring valstr);
+    std::wstring get_regval(HKEY rootkey, std::wstring keystr, std::wstring subkeystr);
+    LONG GetStringRegKey(HKEY hKey, const std::wstring& valname, std::wstring& strvalue, const std::wstring& defval);
+
 };

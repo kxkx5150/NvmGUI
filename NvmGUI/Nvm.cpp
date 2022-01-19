@@ -48,7 +48,6 @@ void Nvm::init()
     std::transform(strDispName.begin(), strDispName.end(), strDispName.begin(), std::tolower);
     std::transform(rootpath.begin(), rootpath.end(), rootpath.begin(), std::tolower);
 
-
     if (0 == strDispName.find(rootpath)) {
         if (strDispName.length() == rootpath.length())
             return;
@@ -549,9 +548,13 @@ bool Nvm::check_env_path()
             if (false) {
                 ShellExecute(NULL, L"runas", L"cmd.exe", L"/C setreg.bat", NULL, SW_HIDE);
             } else {
-                create_reg_symkey();
+                std::wstring prntkey = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+                std::wstring keystr = L"NVM_GUI_SYMLINK";
+                std::wstring valstr = L"C:\\Program Files\\nodejs";
+                set_regval(HKEY_LOCAL_MACHINE, prntkey, keystr, valstr);
                 append_env_path();
             }
+
             MessageBox(NULL, TEXT("Please restart Windows\r\n set PATH environment variable"),
                 TEXT("Please restart Windows"), MB_ICONINFORMATION);
             DWORD_PTR dwReturnValue;
@@ -559,6 +562,7 @@ bool Nvm::check_env_path()
                 HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)TEXT("Environment"),
                 SMTO_ABORTIFHUNG, 5000, &dwReturnValue);
             return true;
+
         } else {
             free(buf);
             return true;
@@ -567,14 +571,10 @@ bool Nvm::check_env_path()
 
     return false;
 }
-bool Nvm::create_reg_symkey()
+bool Nvm::set_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::wstring valstr)
 {
-    std::wstring rootkeystr = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
-    std::wstring keystr = L"NVM_GUI_SYMLINK";
-    std::wstring valstr = L"C:\\Program Files\\nodejs";
-
     HKEY newValue;
-    if (RegOpenKey(HKEY_LOCAL_MACHINE, rootkeystr.c_str(), &newValue) != ERROR_SUCCESS) {
+    if (RegOpenKey(HKEY_LOCAL_MACHINE, prntkey.c_str(), &newValue) != ERROR_SUCCESS) {
         return FALSE;
     }
 
@@ -590,6 +590,28 @@ bool Nvm::create_reg_symkey()
     }
     RegCloseKey(newValue);
     return TRUE;
+}
+std::wstring Nvm::get_regval(HKEY rootkey, std::wstring keystr, std::wstring subkeystr)
+{
+    HKEY hKey;
+    if (RegOpenKey(rootkey, keystr.c_str(), &hKey) == ERROR_SUCCESS) {
+        std::wstring strvalue;
+        GetStringRegKey(hKey, subkeystr.c_str(), strvalue, L"empty");
+        return strvalue;
+    }
+    return L"empty";
+}
+LONG Nvm::GetStringRegKey(HKEY hKey, const std::wstring& valname, std::wstring& strvalue, const std::wstring& defval)
+{
+    strvalue = defval;
+    WCHAR szBuffer[512];
+    DWORD dwBufferSize = sizeof(szBuffer);
+    ULONG nError;
+    nError = RegQueryValueExW(hKey, valname.c_str(), 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
+    if (ERROR_SUCCESS == nError) {
+        strvalue = szBuffer;
+    }
+    return nError;
 }
 bool Nvm::append_env_path()
 {
@@ -637,6 +659,39 @@ void Nvm::create_symbolic_link(Node* instnode)
             instnode->m_x64_dir.c_str(), 1);
     }
 }
+void Nvm::toggle_disabled(bool checked)
+{
+    std::wstring prntkey = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    std::wstring keystr = L"NVM_GUI_SYMLINK";
+    std::wstring valstr = L"C:\\Program Files\\nodejs";
+
+    if (!checked) {
+        EnableWindow(m_dl_combobox, TRUE);
+        EnableWindow(m_dl_get_btn, TRUE);
+        EnableWindow(m_dl_install_btn, TRUE);
+        EnableWindow(m_installed_combobox, TRUE);
+        EnableWindow(m_installed_usebtn, TRUE);
+        EnableWindow(m_installed_deletebtn, TRUE);
+
+    } else {
+        EnableWindow(m_dl_combobox, FALSE);
+        EnableWindow(m_dl_get_btn, FALSE);
+        EnableWindow(m_dl_install_btn, FALSE);
+        EnableWindow(m_installed_combobox, FALSE);
+        EnableWindow(m_installed_usebtn, FALSE);
+        EnableWindow(m_installed_deletebtn, FALSE);
+        valstr = L"C:\\Program Files\\nodejs_disabled";
+    }
+
+    set_regval(HKEY_LOCAL_MACHINE, prntkey, keystr, valstr);
+}
+
+
+
+
+
+
+
 void Nvm::exe_directory_path(TCHAR* path)
 {
     GetModuleFileName(NULL, path, MAX_PATH);
@@ -761,7 +816,6 @@ void Nvm::read_setting_csv()
             actflg = true;
         }
         add_installed_list(verstr, npmstr, ltsstr, secstr, modstr, x86, actflg);
-
     }
     if (-1 < selidx) {
         SendMessage(m_installed_combobox, CB_SETCURSEL, (WPARAM)selidx, (LPARAM)0);
