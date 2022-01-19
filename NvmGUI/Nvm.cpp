@@ -266,6 +266,8 @@ void Nvm::click_dlinstall_btn()
             }
 
             if (instcheck) {
+                SendMessage(m_installed_combobox, CB_SETCURSEL, (WPARAM)i, (LPARAM)0);
+
                 return;
             }
         }
