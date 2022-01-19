@@ -416,7 +416,7 @@ void Nvm::create_control()
     m_dl_install_btn = create_button(m_hwnd, 102, 222, 200, 36, IDC_DL_INSTALL, L"Install");
     m_dl_progress = create_progress(m_hwnd, 103, 270, 200, 16, IDC_DL_PROGRESS);
 
-    HWND insttxt = create_statictxt(m_hwnd, 0, 320, 420, 28, IDC_INST_TXT, L"Installed List");
+    HWND insttxt = create_statictxt(m_hwnd, 0, 320, 404, 28, IDC_INST_TXT, L"Installed List");
     SendMessage(insttxt, WM_SETFONT, (WPARAM)m_headFont, MAKELPARAM(FALSE, 0));
     m_installed_combobox = create_combobox(m_hwnd, 65, 360, 272, 200, IDC_INST_LIST);
     m_installed_usebtn = create_button(m_hwnd, 62, 416, 120, 36, IDC_INST_USE, L"Use");
