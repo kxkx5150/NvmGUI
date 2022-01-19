@@ -33,6 +33,7 @@ class Nvm {
 
     std::wstring m_json_url = L"https://nodejs.org/dist/index.json";
     std::wstring m_node_path = L"C:\\Program Files\\nodejs";
+    std::wstring m_active_version = L"";
 
     bool m_dl_ok = false;
 
@@ -64,9 +65,8 @@ public:
     void click_delete_installed_btn();
     void click_use_btn();
 
-
     void add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstring ltsstr,
-        std::wstring secstr, std::wstring modstr, bool x86);
+        std::wstring secstr, std::wstring modstr, bool x86, bool actflg = false);
 
     void set_progress_value(ULONG& number_entry, ULONG& cont, char* filename);
     void write_setting_csv();
@@ -94,7 +94,4 @@ private:
     bool create_reg_symkey();
     bool append_env_path();
     bool move_original_node();
-
-
 };
-

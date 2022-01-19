@@ -35,6 +35,29 @@ void Nvm::init()
     if (!PathFileExists(path)) {
         if (!CreateDirectory(path, NULL)) {
             OutputDebugString(L"error");
+            return;
+        }
+    }
+
+    ULONG qReparseTag = 0;
+    std::wstring strLinkPath = L"";
+    std::wstring strDispName = L"";
+    GetReparsePointInfo(m_node_path.c_str(), qReparseTag, strLinkPath, strDispName);
+
+    std::wstring rootpath = path;
+    std::transform(strDispName.begin(), strDispName.end(), strDispName.begin(), std::tolower);
+    std::transform(rootpath.begin(), rootpath.end(), rootpath.begin(), std::tolower);
+
+
+    if (0 == strDispName.find(rootpath)) {
+        if (strDispName.length() == rootpath.length())
+            return;
+
+        std::wstring fname = strDispName.substr(rootpath.length());
+        if (PathFileExists(strDispName.c_str()) && PathIsDirectory(strDispName.c_str())) {
+            m_active_version = fname;
+        } else {
+            return;
         }
     }
 }
@@ -168,7 +191,7 @@ void Nvm::set_progress_value(ULONG& number_entry, ULONG& cont, char* filename)
     SendMessage(m_dl_progress, PBM_SETPOS, (WPARAM)val, 0);
 }
 void Nvm::add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstring ltsstr,
-    std::wstring secstr, std::wstring modstr, bool x86)
+    std::wstring secstr, std::wstring modstr, bool x86, bool actflg)
 {
     Node* node = new Node(
         this,
@@ -199,6 +222,10 @@ void Nvm::add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstr
     m_installed_list.push_back(node);
     SendMessage(m_installed_combobox, CB_ADDSTRING, 1, (LPARAM)lbl.c_str());
     EnableWindow(m_dl_install_btn, TRUE);
+
+    if (actflg) {
+        //SendMessage(m_installed_combobox, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
+    }
 }
 int Nvm::get_nodes_len()
 {
@@ -223,12 +250,13 @@ void Nvm::click_dllist_btn()
 void Nvm::click_dlinstall_btn()
 {
     int idx = ListView_GetNextItem(m_dl_listview, -1, LVNI_SELECTED);
-    ListView_SetItemState(m_dl_listview, -1, 0, LVIS_SELECTED);
     if (idx != -1) {
-        Node* node = m_current_dllist[idx];
+        ListView_SetItemState(m_dl_listview, -1, 0, LVIS_SELECTED);
+        int itemidx = idx / 2;
+        Node* node = m_current_dllist[itemidx];
         bool x86 = idx % 2;
-        bool instcheck = false;
 
+        bool instcheck = false;
         for (size_t i = 0; i < m_installed_list.size(); i++) {
             Node* instnode = m_installed_list[i];
             if (x86) {
@@ -246,8 +274,7 @@ void Nvm::click_dlinstall_btn()
         ULONG max = 1;
         ULONG cnt = 0;
         set_progress_value(max, cnt, NULL);
-        int lstidx = idx / 2;
-        BOOL rval = m_current_dllist[lstidx]->download_node(idx % 2);
+        BOOL rval = node->download_node(x86);
         if (!rval) {
             EnableWindow(m_dl_install_btn, TRUE);
         }
@@ -707,13 +734,15 @@ void Nvm::read_setting_csv()
     std::wstring txt = stradd;
     std::vector<std::wstring> str = split(txt, '\n');
     size_t len = str.size();
+    int selidx = -1;
+    int itemcnt = 0;
 
     for (size_t i = 0; i < len; i++) {
         std::vector<std::wstring> strvec = split(str.at(i), ',');
         int csvlen = strvec.size();
         if (csvlen < 6)
             continue;
-
+        itemcnt++;
         std::wstring verstr = strvec.at(0);
         std::wstring npmstr = strvec.at(1);
         std::wstring ltsstr = strvec.at(2);
@@ -721,8 +750,21 @@ void Nvm::read_setting_csv()
         std::wstring modstr = strvec.at(4);
         std::wstring archstr = strvec.at(5);
         bool x86 = 0 == archstr.find(L"x86") ? true : false;
-        add_installed_list(verstr, npmstr, ltsstr, secstr, modstr, x86);
+
+        bool actflg = false;
+        std::wstring nodename = L"node-" + verstr + L"-win-";
+        nodename += x86 ? L"x86" : L"x64";
+        if (0 == m_active_version.find(nodename)) {
+            selidx = itemcnt;
+            actflg = true;
+        }
+        add_installed_list(verstr, npmstr, ltsstr, secstr, modstr, x86, actflg);
+
     }
+    if (-1 < selidx) {
+        SendMessage(m_installed_combobox, CB_SETCURSEL, (WPARAM)selidx, (LPARAM)0);
+    }
+
     delete[] stradd;
 }
 std::vector<std::wstring> Nvm::split(std::wstring& input, TCHAR delimiter)
