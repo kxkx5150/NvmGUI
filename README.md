@@ -1,6 +1,6 @@
 # Nvm GUI
 
-## Node Version Manager  
+## Node.js Version Manager  
 
 Windows 10  App
 
