@@ -73,31 +73,29 @@ public:
     void toggle_disabled(bool checked);
 
 private:
-    HFONT create_font(int fontsize);
     void set_font();
-    HWND create_listview(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
+    HFONT create_font(int fontsize);
 
+    HWND create_listview(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
     void create_dllistview_items(std::vector<Node*> nodes);
     void create_listview_item(HWND lstvhwnd, Node* node, int idx, const TCHAR* arch);
     HWND create_combobox(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
     HWND create_button(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);
     HWND create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
     HWND create_statictxt(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);
-    int write_file(TCHAR* filename, TCHAR* args);
-    void exe_directory_path(TCHAR* path);
-    void read_setting_csv();
-    TCHAR* read_file(const TCHAR* filename);
-    std::vector<std::wstring> split(std::wstring& input, TCHAR delimiter);
 
+    bool move_original_node();
     void create_symbolic_link(Node* instnode);
 
     bool check_env_path();
-    bool create_reg_symkey();
-    bool append_env_path();
-    bool move_original_node();
-
+    std::wstring get_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr);
     bool set_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::wstring valstr);
-    std::wstring get_regval(HKEY rootkey, std::wstring keystr, std::wstring subkeystr);
-    LONG GetStringRegKey(HKEY hKey, const std::wstring& valname, std::wstring& strvalue, const std::wstring& defval);
+    bool add_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::wstring valstr);
+    void send_change_reg_msg();
 
+    int write_file(TCHAR* filename, TCHAR* args);
+    void read_setting_csv();
+    TCHAR* read_file(const TCHAR* filename);
+    std::vector<std::wstring> split(std::wstring& input, TCHAR delimiter);
+    void exe_directory_path(TCHAR* path);
 };

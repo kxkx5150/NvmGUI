@@ -548,21 +548,14 @@ bool Nvm::check_env_path()
             if (false) {
                 ShellExecute(NULL, L"runas", L"cmd.exe", L"/C setreg.bat", NULL, SW_HIDE);
             } else {
-                std::wstring prntkey = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
-                std::wstring keystr = L"NVM_GUI_SYMLINK";
-                std::wstring valstr = L"C:\\Program Files\\nodejs";
-                set_regval(HKEY_LOCAL_MACHINE, prntkey, keystr, valstr);
-                append_env_path();
+                std::wstring envpath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+                set_regval(HKEY_LOCAL_MACHINE, envpath, L"NVM_GUI_SYMLINK", L"C:\\Program Files\\nodejs");
+                add_regval(HKEY_LOCAL_MACHINE, envpath, L"PATH", L"\%NVM_GUI_SYMLINK\%;");
             }
 
-            MessageBox(NULL, TEXT("Please restart Windows\r\n set PATH environment variable"),
-                TEXT("Please restart Windows"), MB_ICONINFORMATION);
-            DWORD_PTR dwReturnValue;
-            LRESULT Ret = SendMessageTimeout(
-                HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)TEXT("Environment"),
-                SMTO_ABORTIFHUNG, 5000, &dwReturnValue);
+            MessageBox(NULL, TEXT("Please restart Windows"),TEXT("Nvm GUI"), MB_ICONINFORMATION);
+            send_change_reg_msg();
             return true;
-
         } else {
             free(buf);
             return true;
@@ -571,83 +564,65 @@ bool Nvm::check_env_path()
 
     return false;
 }
+std::wstring Nvm::get_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr)
+{
+    std::wstring strvalue = L"empty";
+    HKEY newValue;
+    if (RegOpenKey(hKey, prntkey.c_str(), &newValue) != ERROR_SUCCESS)
+        return strvalue;
+
+    DWORD dwType = REG_SZ;
+    TCHAR szBuffer[2048] = {};
+    DWORD dwBufferSize = sizeof(szBuffer);
+    if (ERROR_SUCCESS == RegQueryValueEx(newValue, keystr.c_str(), 0, &dwType, (LPBYTE)szBuffer, &dwBufferSize)) {
+        strvalue = szBuffer;
+    }
+    RegCloseKey(hKey);
+    return strvalue;
+}
 bool Nvm::set_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::wstring valstr)
 {
     HKEY newValue;
-    if (RegOpenKey(HKEY_LOCAL_MACHINE, prntkey.c_str(), &newValue) != ERROR_SUCCESS) {
-        return FALSE;
-    }
+    BOOL rflg = FALSE;
+    if (RegOpenKey(hKey, prntkey.c_str(), &newValue) != ERROR_SUCCESS)
+        return rflg;
 
-    DWORD pathLenInBytes = valstr.size() * sizeof(wchar_t);
-    if (RegSetValueEx(newValue,
-            keystr.c_str(),
-            0, REG_SZ,
-            (LPBYTE)valstr.c_str(),
-            pathLenInBytes)
-        != ERROR_SUCCESS) {
-        RegCloseKey(newValue);
-        return FALSE;
+    DWORD valbytes = valstr.size() * sizeof(wchar_t);
+    if (RegSetValueEx(newValue, keystr.c_str(), 0, REG_SZ, (LPBYTE)valstr.c_str(), valbytes) == ERROR_SUCCESS) {
+        rflg = TRUE;
     }
     RegCloseKey(newValue);
-    return TRUE;
+    return rflg;
 }
-std::wstring Nvm::get_regval(HKEY rootkey, std::wstring keystr, std::wstring subkeystr)
+bool Nvm::add_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::wstring valstr)
 {
-    HKEY hKey;
-    if (RegOpenKey(rootkey, keystr.c_str(), &hKey) == ERROR_SUCCESS) {
-        std::wstring strvalue;
-        GetStringRegKey(hKey, subkeystr.c_str(), strvalue, L"empty");
-        return strvalue;
-    }
-    return L"empty";
-}
-LONG Nvm::GetStringRegKey(HKEY hKey, const std::wstring& valname, std::wstring& strvalue, const std::wstring& defval)
-{
-    strvalue = defval;
-    WCHAR szBuffer[512];
-    DWORD dwBufferSize = sizeof(szBuffer);
-    ULONG nError;
-    nError = RegQueryValueExW(hKey, valname.c_str(), 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
-    if (ERROR_SUCCESS == nError) {
-        strvalue = szBuffer;
-    }
-    return nError;
-}
-bool Nvm::append_env_path()
-{
-    std::wstring rootkeystr = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
-    std::wstring valstr = L"\%NVM_GUI_SYMLINK\%;";
-
     HKEY newValue;
-    if (RegOpenKey(HKEY_LOCAL_MACHINE, rootkeystr.c_str(), &newValue) != ERROR_SUCCESS) {
-        return FALSE;
-    }
+    BOOL rflg = FALSE;
+    if (RegOpenKey(hKey, prntkey.c_str(), &newValue) != ERROR_SUCCESS)
+        return rflg;
+
 
     DWORD dwType = REG_SZ;
-    TCHAR data[1024] = {};
-    DWORD dwSize = sizeof(data);
-    if (RegQueryValueEx(newValue, L"PATH", NULL, &dwType, (LPBYTE)data, &dwSize) == ERROR_SUCCESS) {
-        std::wstring environment = valstr;
-        environment += data;
+    TCHAR szBuffer[2048] = {};
+    DWORD dwBufferSize = sizeof(szBuffer);
+    if (RegQueryValueEx(newValue, keystr.c_str(), 0, &dwType, (LPBYTE)szBuffer, &dwBufferSize) == ERROR_SUCCESS) {
+        std::wstring regvalstr = valstr;
+        regvalstr += szBuffer;
 
-        DWORD pathLenInBytes = environment.size() * sizeof(wchar_t);
-        if (RegSetValueEx(newValue,
-                L"PATH",
-                0, REG_SZ,
-                (LPBYTE)environment.c_str(),
-                pathLenInBytes)
-            != ERROR_SUCCESS) {
-            RegCloseKey(newValue);
-            return FALSE;
+        DWORD regvalbytes = regvalstr.size() * sizeof(wchar_t);
+        if (RegSetValueEx(newValue, keystr.c_str(), 0, REG_SZ, (LPBYTE)regvalstr.c_str(), regvalbytes) == ERROR_SUCCESS) {
+            rflg = TRUE;
         }
-
-        DWORD_PTR dwReturnValue;
-        LRESULT Ret = SendMessageTimeout(
-            HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)TEXT("Environment"),
-            SMTO_ABORTIFHUNG, 5000, &dwReturnValue);
     }
     RegCloseKey(newValue);
-    return TRUE;
+    return rflg;
+}
+void Nvm::send_change_reg_msg()
+{
+    DWORD_PTR sndmsgrval;
+    LRESULT Ret = SendMessageTimeout(
+        HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)TEXT("Environment"),
+        SMTO_ABORTIFHUNG, 5000, &sndmsgrval);
 }
 void Nvm::create_symbolic_link(Node* instnode)
 {
@@ -661,10 +636,7 @@ void Nvm::create_symbolic_link(Node* instnode)
 }
 void Nvm::toggle_disabled(bool checked)
 {
-    std::wstring prntkey = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
-    std::wstring keystr = L"NVM_GUI_SYMLINK";
     std::wstring valstr = L"C:\\Program Files\\nodejs";
-
     if (!checked) {
         EnableWindow(m_dl_combobox, TRUE);
         EnableWindow(m_dl_get_btn, TRUE);
@@ -682,16 +654,10 @@ void Nvm::toggle_disabled(bool checked)
         EnableWindow(m_installed_deletebtn, FALSE);
         valstr = L"C:\\Program Files\\nodejs_disabled";
     }
-
-    set_regval(HKEY_LOCAL_MACHINE, prntkey, keystr, valstr);
+    std::wstring envpath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    set_regval(HKEY_LOCAL_MACHINE, envpath, L"NVM_GUI_SYMLINK", valstr);
+    send_change_reg_msg();
 }
-
-
-
-
-
-
-
 void Nvm::exe_directory_path(TCHAR* path)
 {
     GetModuleFileName(NULL, path, MAX_PATH);
