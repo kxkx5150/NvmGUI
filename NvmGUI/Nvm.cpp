@@ -18,6 +18,7 @@ Nvm::Nvm(HWND hwnd, HINSTANCE hInst)
     : m_hwnd(hwnd)
     , m_hInst(hInst)
 {
+    set_regkey(HKEY_CURRENT_USER, L"SOFTWARE\\NVM_GUI_kxkx5150");
     init();
 }
 Nvm::~Nvm()
@@ -47,6 +48,7 @@ void Nvm::init()
     std::wstring rootpath = path;
     std::transform(strDispName.begin(), strDispName.end(), strDispName.begin(), std::tolower);
     std::transform(rootpath.begin(), rootpath.end(), rootpath.begin(), std::tolower);
+    m_app_path = rootpath;
 
     if (0 == strDispName.find(rootpath)) {
         if (strDispName.length() == rootpath.length())
@@ -461,6 +463,10 @@ void Nvm::create_control()
     SendMessage(m_dl_combobox, CB_SETCURSEL, 0, 0);
 
     read_setting_csv();
+    std::wstring disablestr = get_regval(HKEY_CURRENT_USER, L"SOFTWARE\\NVM_GUI_kxkx5150", L"disabled");
+    if (0 != disablestr.find(L"false")) {
+        toggle_disabled(m_hwnd);
+    }
 }
 void Nvm::click_use_btn()
 {
@@ -489,15 +495,13 @@ void Nvm::click_use_btn()
 
             if (IO_REPARSE_TAG_SYMLINK == qReparseTag) {
                 RemoveDirectory(m_node_path.c_str());
-                create_symbolic_link(instnode);
-            } else {
-                if (PathFileExists(m_node_path.c_str()) && PathIsDirectory(m_node_path.c_str())) {
-                    if (move_original_node()) {
-                        create_symbolic_link(instnode);
-                    }
-                } else {
-                    create_symbolic_link(instnode);
+                create_symlink(instnode);
+            } else if (PathFileExists(m_node_path.c_str()) && PathIsDirectory(m_node_path.c_str())) {
+                if (move_original_node()) {
+                    create_symlink(instnode);
                 }
+            } else {
+                create_symlink(instnode);
             }
 
             Sleep(50);
@@ -533,6 +537,52 @@ bool Nvm::move_original_node()
     }
     return false;
 }
+void Nvm::create_symlink(Node* instnode)
+{
+    if (instnode->m_install_arch.find(L"x86") == 0) {
+        int rt = CreateSymbolicLink(m_node_path.c_str(),
+            instnode->m_x86_dir.c_str(), 1);
+    } else {
+        int rt = CreateSymbolicLink(m_node_path.c_str(),
+            instnode->m_x64_dir.c_str(), 1);
+    }
+}
+void Nvm::revert_symlink()
+{
+    if (0 < m_symlink_target_path.length()) {
+
+
+
+
+        int rt = CreateSymbolicLink(m_node_path.c_str(), m_symlink_target_path.c_str(), 1);
+    }
+}
+bool Nvm::revert_original_node()
+{
+    m_symlink_target_path = L"";
+    ULONG qReparseTag = 0;
+    std::wstring strLinkPath = L"";
+    std::wstring strDispName = L"";
+    GetReparsePointInfo(m_node_path.c_str(), qReparseTag, strLinkPath, strDispName);
+    std::transform(strDispName.begin(), strDispName.end(), strDispName.begin(), std::tolower);
+
+    std::wstring orgnodepath = m_node_path + L"_original";
+
+    if (IO_REPARSE_TAG_SYMLINK == qReparseTag) {
+        if (0 == strDispName.find(m_app_path)) {
+            m_symlink_target_path = strDispName;
+            RemoveDirectory(m_node_path.c_str());
+        }
+    } else if (PathFileExists(m_node_path.c_str()) && PathIsDirectory(m_node_path.c_str())) {
+        return false;
+    }
+
+    if (PathFileExists(orgnodepath.c_str()) && PathIsDirectory(orgnodepath.c_str())) {
+        MoveFile(orgnodepath.c_str(), m_node_path.c_str());
+        return true;
+    }
+    return false;
+}
 bool Nvm::check_env_path()
 {
     TCHAR* buf = nullptr;
@@ -549,11 +599,11 @@ bool Nvm::check_env_path()
                 ShellExecute(NULL, L"runas", L"cmd.exe", L"/C setreg.bat", NULL, SW_HIDE);
             } else {
                 std::wstring envpath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
-                set_regval(HKEY_LOCAL_MACHINE, envpath, L"NVM_GUI_SYMLINK", L"C:\\Program Files\\nodejs");
+                set_regval(HKEY_LOCAL_MACHINE, envpath, L"NVM_GUI_SYMLINK", m_node_path);
                 add_regval(HKEY_LOCAL_MACHINE, envpath, L"PATH", L"\%NVM_GUI_SYMLINK\%;");
             }
 
-            MessageBox(NULL, TEXT("Please restart Windows"),TEXT("Nvm GUI"), MB_ICONINFORMATION);
+            MessageBox(NULL, TEXT("Please restart Windows"), TEXT("Nvm GUI"), MB_ICONINFORMATION);
             send_change_reg_msg();
             return true;
         } else {
@@ -566,7 +616,7 @@ bool Nvm::check_env_path()
 }
 std::wstring Nvm::get_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr)
 {
-    std::wstring strvalue = L"empty";
+    std::wstring strvalue = L"false";
     HKEY newValue;
     if (RegOpenKey(hKey, prntkey.c_str(), &newValue) != ERROR_SUCCESS)
         return strvalue;
@@ -590,6 +640,7 @@ bool Nvm::set_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::
     DWORD valbytes = valstr.size() * sizeof(wchar_t);
     if (RegSetValueEx(newValue, keystr.c_str(), 0, REG_SZ, (LPBYTE)valstr.c_str(), valbytes) == ERROR_SUCCESS) {
         rflg = TRUE;
+        BOOL bRet = SetEnvironmentVariable(keystr.c_str(), valstr.c_str());
     }
     RegCloseKey(newValue);
     return rflg;
@@ -601,21 +652,37 @@ bool Nvm::add_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::
     if (RegOpenKey(hKey, prntkey.c_str(), &newValue) != ERROR_SUCCESS)
         return rflg;
 
-
     DWORD dwType = REG_SZ;
     TCHAR szBuffer[2048] = {};
     DWORD dwBufferSize = sizeof(szBuffer);
     if (RegQueryValueEx(newValue, keystr.c_str(), 0, &dwType, (LPBYTE)szBuffer, &dwBufferSize) == ERROR_SUCCESS) {
-        std::wstring regvalstr = valstr;
-        regvalstr += szBuffer;
-
-        DWORD regvalbytes = regvalstr.size() * sizeof(wchar_t);
-        if (RegSetValueEx(newValue, keystr.c_str(), 0, REG_SZ, (LPBYTE)regvalstr.c_str(), regvalbytes) == ERROR_SUCCESS) {
+        std::wstring bufstr = szBuffer;
+        if (std::wstring::npos != bufstr.find(valstr)) {
+            RegCloseKey(newValue);
+            return rflg;
+        }
+        valstr += bufstr;
+        DWORD regvalbytes = valstr.size() * sizeof(wchar_t);
+        if (RegSetValueEx(newValue, keystr.c_str(), 0, REG_SZ, (LPBYTE)valstr.c_str(), regvalbytes) == ERROR_SUCCESS) {
             rflg = TRUE;
+            BOOL bRet = SetEnvironmentVariable(keystr.c_str(), valstr.c_str());
         }
     }
     RegCloseKey(newValue);
     return rflg;
+}
+bool Nvm::set_regkey(HKEY hKey, std::wstring keystr)
+{
+    HKEY usrhkey;
+    DWORD dwDisposition;
+    if (RegOpenKey(hKey, keystr.c_str(), &usrhkey) != ERROR_SUCCESS) {
+        DWORD Ret = RegCreateKeyEx(hKey, keystr.c_str(), 0, NULL,
+            REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey, &dwDisposition);
+        if (Ret != ERROR_SUCCESS)
+            return false;
+    }
+    RegCloseKey(usrhkey);
+    return true;
 }
 void Nvm::send_change_reg_msg()
 {
@@ -624,27 +691,23 @@ void Nvm::send_change_reg_msg()
         HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)TEXT("Environment"),
         SMTO_ABORTIFHUNG, 5000, &sndmsgrval);
 }
-void Nvm::create_symbolic_link(Node* instnode)
+void Nvm::toggle_disabled(HWND hwnd)
 {
-    if (instnode->m_install_arch.find(L"x86") == 0) {
-        int rt = CreateSymbolicLink(m_node_path.c_str(),
-            instnode->m_x86_dir.c_str(), 1);
-    } else {
-        int rt = CreateSymbolicLink(m_node_path.c_str(),
-            instnode->m_x64_dir.c_str(), 1);
-    }
-}
-void Nvm::toggle_disabled(bool checked)
-{
-    std::wstring valstr = L"C:\\Program Files\\nodejs";
-    if (!checked) {
+    HMENU hmenu = GetMenu(hwnd);
+    UINT uState = GetMenuState(hmenu, ID_MENU_DISABLED, MF_BYCOMMAND);
+    std::wstring valstr = m_node_path;
+    std::wstring regval = L"false";
+
+    if (uState) {
         EnableWindow(m_dl_combobox, TRUE);
         EnableWindow(m_dl_get_btn, TRUE);
         EnableWindow(m_dl_install_btn, TRUE);
         EnableWindow(m_installed_combobox, TRUE);
         EnableWindow(m_installed_usebtn, TRUE);
         EnableWindow(m_installed_deletebtn, TRUE);
-
+        move_original_node();
+        revert_symlink();
+        CheckMenuItem(hmenu, ID_MENU_DISABLED, MF_BYCOMMAND | MFS_UNCHECKED);
     } else {
         EnableWindow(m_dl_combobox, FALSE);
         EnableWindow(m_dl_get_btn, FALSE);
@@ -653,9 +716,14 @@ void Nvm::toggle_disabled(bool checked)
         EnableWindow(m_installed_usebtn, FALSE);
         EnableWindow(m_installed_deletebtn, FALSE);
         valstr = L"C:\\Program Files\\nodejs_disabled";
+        CheckMenuItem(hmenu, ID_MENU_DISABLED, MF_BYCOMMAND | MFS_CHECKED);
+        revert_original_node();
+        regval = m_active_version;
+
     }
     std::wstring envpath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
     set_regval(HKEY_LOCAL_MACHINE, envpath, L"NVM_GUI_SYMLINK", valstr);
+    set_regval(HKEY_CURRENT_USER, L"SOFTWARE\\NVM_GUI_kxkx5150", L"disabled", regval);
     send_change_reg_msg();
 }
 void Nvm::exe_directory_path(TCHAR* path)
@@ -758,7 +826,7 @@ void Nvm::read_setting_csv()
     std::vector<std::wstring> str = split(txt, '\n');
     size_t len = str.size();
     int selidx = -1;
-    int itemcnt = 0;
+    int itemcnt = -1;
 
     for (size_t i = 0; i < len; i++) {
         std::vector<std::wstring> strvec = split(str.at(i), ',');

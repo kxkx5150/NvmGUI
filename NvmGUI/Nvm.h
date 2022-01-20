@@ -33,11 +33,14 @@ class Nvm {
 
     std::wstring m_json_url = L"https://nodejs.org/dist/index.json";
     std::wstring m_node_path = L"C:\\Program Files\\nodejs";
+
     std::wstring m_active_version = L"";
+    std::wstring m_symlink_target_path = L"";
 
     bool m_dl_ok = false;
 
 public:
+    std::wstring m_app_path = L"";
     HWND m_dl_install_btn = nullptr;
 
     HFONT m_headFont = nullptr;
@@ -70,7 +73,7 @@ public:
 
     void set_progress_value(ULONG& number_entry, ULONG& cont, char* filename);
     void write_setting_csv();
-    void toggle_disabled(bool checked);
+    void toggle_disabled(HWND hwnd);
 
 private:
     void set_font();
@@ -85,12 +88,15 @@ private:
     HWND create_statictxt(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);
 
     bool move_original_node();
-    void create_symbolic_link(Node* instnode);
+    bool revert_original_node();
+    void create_symlink(Node* instnode);
+    void revert_symlink();
 
     bool check_env_path();
     std::wstring get_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr);
     bool set_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::wstring valstr);
     bool add_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::wstring valstr);
+    bool set_regkey(HKEY hKey, std::wstring keystr);
     void send_change_reg_msg();
 
     int write_file(TCHAR* filename, TCHAR* args);
