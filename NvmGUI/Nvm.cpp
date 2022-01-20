@@ -256,7 +256,6 @@ void Nvm::click_dlinstall_btn()
         int itemidx = idx / 2;
         Node* node = m_current_dllist[itemidx];
         bool x86 = idx % 2;
-
         bool instcheck = false;
         for (size_t i = 0; i < m_installed_list.size(); i++) {
             Node* instnode = m_installed_list[i];
@@ -268,7 +267,6 @@ void Nvm::click_dlinstall_btn()
 
             if (instcheck) {
                 SendMessage(m_installed_combobox, CB_SETCURSEL, (WPARAM)i, (LPARAM)0);
-
                 return;
             }
         }
@@ -462,11 +460,12 @@ void Nvm::create_control()
     SendMessage(m_dl_combobox, CB_ADDSTRING, 4, (LPARAM)L"LTS & Security");
     SendMessage(m_dl_combobox, CB_SETCURSEL, 0, 0);
 
-    read_setting_csv();
     std::wstring disablestr = get_regval(HKEY_CURRENT_USER, L"SOFTWARE\\NVM_GUI_kxkx5150", L"disabled");
-    if (0 != disablestr.find(L"false")) {
-        toggle_disabled(m_hwnd);
+    if (0 != disablestr.find(L"false") && 0 < disablestr.length()) {
+        toggle_disabled(m_hwnd, true);
+        m_active_version = disablestr;
     }
+    read_setting_csv();
 }
 void Nvm::click_use_btn()
 {
@@ -477,7 +476,6 @@ void Nvm::click_use_btn()
     int idx = SendMessage(m_installed_combobox, CB_GETCURSEL, 0, 0);
     if (idx != -1) {
         EnableWindow(m_installed_usebtn, FALSE);
-
         Node* instnode = m_installed_list[idx];
         Sleep(50);
         cnt = 2;
@@ -488,21 +486,7 @@ void Nvm::click_use_btn()
             cnt = 4;
             set_progress_value(max, cnt, NULL);
 
-            ULONG qReparseTag = 0;
-            std::wstring strLinkPath = L"";
-            std::wstring strDispName = L"";
-            GetReparsePointInfo(m_node_path.c_str(), qReparseTag, strLinkPath, strDispName);
-
-            if (IO_REPARSE_TAG_SYMLINK == qReparseTag) {
-                RemoveDirectory(m_node_path.c_str());
-                create_symlink(instnode);
-            } else if (PathFileExists(m_node_path.c_str()) && PathIsDirectory(m_node_path.c_str())) {
-                if (move_original_node()) {
-                    create_symlink(instnode);
-                }
-            } else {
-                create_symlink(instnode);
-            }
+            check_node_path_type(instnode);
 
             Sleep(50);
             cnt = 7;
@@ -514,6 +498,25 @@ void Nvm::click_use_btn()
     }
     EnableWindow(m_installed_usebtn, TRUE);
 }
+void Nvm::check_node_path_type(Node* instnode)
+{
+    ULONG qReparseTag = 0;
+    std::wstring strLinkPath = L"";
+    std::wstring strDispName = L"";
+    GetReparsePointInfo(m_node_path.c_str(), qReparseTag, strLinkPath, strDispName);
+
+    if (IO_REPARSE_TAG_SYMLINK == qReparseTag) {
+        RemoveDirectory(m_node_path.c_str());
+        create_symlink(instnode);
+    } else if (PathFileExists(m_node_path.c_str()) && PathIsDirectory(m_node_path.c_str())) {
+        if (move_original_node()) {
+            create_symlink(instnode);
+        }
+    } else {
+        create_symlink(instnode);
+    }
+}
+
 bool Nvm::move_original_node()
 {
     std::wstring prefix = L"";
@@ -539,27 +542,47 @@ bool Nvm::move_original_node()
 }
 void Nvm::create_symlink(Node* instnode)
 {
+    std::wstring nodename = L"node-" + instnode->m_version + L"-win-";
     if (instnode->m_install_arch.find(L"x86") == 0) {
         int rt = CreateSymbolicLink(m_node_path.c_str(),
             instnode->m_x86_dir.c_str(), 1);
+        nodename += L"x86";
     } else {
         int rt = CreateSymbolicLink(m_node_path.c_str(),
             instnode->m_x64_dir.c_str(), 1);
+        nodename += L"x64";
     }
+
+    m_active_version = nodename;
 }
 void Nvm::revert_symlink()
 {
-    if (0 < m_symlink_target_path.length()) {
+    if (m_active_version.length() < 4)
+        return;
 
+    bool x86 = true;
+    if (std::wstring::npos != m_active_version.find(L"x64")) {
+        x86 = false;
+    }
 
+    std::wstring actpath = m_app_path + m_active_version;
+    std::transform(actpath.begin(), actpath.end(), actpath.begin(), std::tolower);
 
-
-        int rt = CreateSymbolicLink(m_node_path.c_str(), m_symlink_target_path.c_str(), 1);
+    for (size_t i = 0; i < m_installed_list.size(); i++) {
+        Node* instnode = m_installed_list[i];
+        std::wstring instpath = instnode->m_x86_dir;
+        if (!x86) {
+            instpath = instnode->m_x64_dir;
+        }
+        std::transform(instpath.begin(), instpath.end(), instpath.begin(), std::tolower);
+        if (std::wstring::npos != actpath.find(instpath)) {
+            check_node_path_type(instnode);
+            return;
+        }
     }
 }
 bool Nvm::revert_original_node()
 {
-    m_symlink_target_path = L"";
     ULONG qReparseTag = 0;
     std::wstring strLinkPath = L"";
     std::wstring strDispName = L"";
@@ -570,7 +593,6 @@ bool Nvm::revert_original_node()
 
     if (IO_REPARSE_TAG_SYMLINK == qReparseTag) {
         if (0 == strDispName.find(m_app_path)) {
-            m_symlink_target_path = strDispName;
             RemoveDirectory(m_node_path.c_str());
         }
     } else if (PathFileExists(m_node_path.c_str()) && PathIsDirectory(m_node_path.c_str())) {
@@ -691,7 +713,7 @@ void Nvm::send_change_reg_msg()
         HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)TEXT("Environment"),
         SMTO_ABORTIFHUNG, 5000, &sndmsgrval);
 }
-void Nvm::toggle_disabled(HWND hwnd)
+void Nvm::toggle_disabled(HWND hwnd, bool noSave)
 {
     HMENU hmenu = GetMenu(hwnd);
     UINT uState = GetMenuState(hmenu, ID_MENU_DISABLED, MF_BYCOMMAND);
@@ -702,7 +724,7 @@ void Nvm::toggle_disabled(HWND hwnd)
         EnableWindow(m_dl_combobox, TRUE);
         EnableWindow(m_dl_get_btn, TRUE);
         EnableWindow(m_dl_install_btn, TRUE);
-        EnableWindow(m_installed_combobox, TRUE);
+        //EnableWindow(m_installed_combobox, TRUE);
         EnableWindow(m_installed_usebtn, TRUE);
         EnableWindow(m_installed_deletebtn, TRUE);
         move_original_node();
@@ -712,15 +734,17 @@ void Nvm::toggle_disabled(HWND hwnd)
         EnableWindow(m_dl_combobox, FALSE);
         EnableWindow(m_dl_get_btn, FALSE);
         EnableWindow(m_dl_install_btn, FALSE);
-        EnableWindow(m_installed_combobox, FALSE);
+        //EnableWindow(m_installed_combobox, FALSE);
         EnableWindow(m_installed_usebtn, FALSE);
         EnableWindow(m_installed_deletebtn, FALSE);
         valstr = L"C:\\Program Files\\nodejs_disabled";
         CheckMenuItem(hmenu, ID_MENU_DISABLED, MF_BYCOMMAND | MFS_CHECKED);
         revert_original_node();
         regval = m_active_version;
-
     }
+    if (noSave)
+        return;
+
     std::wstring envpath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
     set_regval(HKEY_LOCAL_MACHINE, envpath, L"NVM_GUI_SYMLINK", valstr);
     set_regval(HKEY_CURRENT_USER, L"SOFTWARE\\NVM_GUI_kxkx5150", L"disabled", regval);

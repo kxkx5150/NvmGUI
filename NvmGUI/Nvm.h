@@ -35,11 +35,11 @@ class Nvm {
     std::wstring m_node_path = L"C:\\Program Files\\nodejs";
 
     std::wstring m_active_version = L"";
-    std::wstring m_symlink_target_path = L"";
 
     bool m_dl_ok = false;
 
 public:
+
     std::wstring m_app_path = L"";
     HWND m_dl_install_btn = nullptr;
 
@@ -49,15 +49,14 @@ public:
     HFONT m_18Font = nullptr;
 
 public:
-    void parse_available_list(json::value& jsonobj);
 
     Nvm(HWND hwnd, HINSTANCE hInst);
     ~Nvm();
-
     void init();
-    void download_available_list();
-
     void create_control();
+
+    void download_available_list();
+    void parse_available_list(json::value& jsonobj);
 
     int get_nodes_len();
     void clear_nodes();
@@ -73,7 +72,7 @@ public:
 
     void set_progress_value(ULONG& number_entry, ULONG& cont, char* filename);
     void write_setting_csv();
-    void toggle_disabled(HWND hwnd);
+    void toggle_disabled(HWND hwnd, bool noSave=false);
 
 private:
     void set_font();
@@ -87,6 +86,7 @@ private:
     HWND create_progress(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id);
     HWND create_statictxt(HWND hParent, int nX, int nY, int nWidth, int nHeight, int id, const TCHAR* txt);
 
+    void check_node_path_type(Node* instnode);
     bool move_original_node();
     bool revert_original_node();
     void create_symlink(Node* instnode);
