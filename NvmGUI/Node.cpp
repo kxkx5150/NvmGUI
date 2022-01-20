@@ -7,7 +7,6 @@
 #include "unzip/zip.h"
 #include <shlobj.h>
 
-
 extern Nvm* g_nvm;
 Node::Node(Nvm* nvm, std::wstring version, std::wstring npm, std::wstring lts,
     std::wstring security, std::wstring modules, HWND proghwnd)

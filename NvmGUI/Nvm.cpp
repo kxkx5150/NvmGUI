@@ -20,6 +20,7 @@ Nvm::Nvm(HWND hwnd, HINSTANCE hInst)
 {
     set_regkey(HKEY_CURRENT_USER, L"SOFTWARE\\NVM_GUI_kxkx5150");
     init();
+    get_node_install_path();
 }
 Nvm::~Nvm()
 {
@@ -59,6 +60,20 @@ void Nvm::init()
             m_active_version = fname;
         } else {
             return;
+        }
+    }
+}
+void Nvm::get_node_install_path()
+{
+    std::wstring nodepath = get_regval(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Node.js", L"InstallPath");
+    if (0 != nodepath.find(L"false") && 3 < nodepath.length()) {
+        std::wstring nodeexe = nodepath;
+        nodeexe += L"node.exe";
+        if (PathFileExists(nodeexe.c_str())) {
+            std::wstring lst = nodepath.substr(nodepath.length() - 1);
+            if (0 == lst.find(L"\\")) {
+                m_node_path = nodepath.substr(0, nodepath.length() - 1);
+            }
         }
     }
 }
@@ -227,10 +242,6 @@ void Nvm::add_installed_list(std::wstring verstr, std::wstring npmstr, std::wstr
     if (actflg) {
         //SendMessage(m_installed_combobox, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
     }
-}
-int Nvm::get_nodes_len()
-{
-    return m_nodes.size();
 }
 void Nvm::click_dllist_btn()
 {

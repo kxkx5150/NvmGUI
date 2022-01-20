@@ -39,7 +39,6 @@ class Nvm {
     bool m_dl_ok = false;
 
 public:
-
     std::wstring m_app_path = L"";
     HWND m_dl_install_btn = nullptr;
 
@@ -49,16 +48,15 @@ public:
     HFONT m_18Font = nullptr;
 
 public:
-
     Nvm(HWND hwnd, HINSTANCE hInst);
     ~Nvm();
     void init();
+    void get_node_install_path();
     void create_control();
 
     void download_available_list();
     void parse_available_list(json::value& jsonobj);
 
-    int get_nodes_len();
     void clear_nodes();
     void clear_install_nodes();
 
@@ -72,7 +70,7 @@ public:
 
     void set_progress_value(ULONG& number_entry, ULONG& cont, char* filename);
     void write_setting_csv();
-    void toggle_disabled(HWND hwnd, bool noSave=false);
+    void toggle_disabled(HWND hwnd, bool noSave = false);
 
 private:
     void set_font();

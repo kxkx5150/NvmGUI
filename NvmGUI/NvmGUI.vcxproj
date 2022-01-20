@@ -161,6 +161,7 @@
     <ResourceCompile Include="NvmGUI.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="node.ico" />
     <Image Include="NvmGUI.ico" />
     <Image Include="small.ico" />
   </ItemGroup>

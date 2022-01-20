@@ -1,6 +1,6 @@
 #pragma once
-#include <Windows.h>
 #include <CommCtrl.h>
+#include <Windows.h>
 
 class DownloadProgress : public IBindStatusCallback {
     HWND m_progress = nullptr;

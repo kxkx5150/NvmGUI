@@ -22,7 +22,6 @@ private:
 
     std::wstring m_x86 = L"win-x86.zip";
     std::wstring m_x64 = L"win-x64.zip";
-
     std::wstring m_root_dir = L"";
 
 public:
@@ -35,7 +34,6 @@ public:
     std::wstring get_store_filename(bool x86 = false);
     BOOL download_node(bool x86 = false);
     BOOL remove_dir(bool x86 = false);
-
     BOOL check_exists_dir(const TCHAR* path);
 
 private:
