@@ -633,7 +633,8 @@ bool Nvm::check_env_path()
             } else {
                 std::wstring envpath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
                 set_regval(HKEY_LOCAL_MACHINE, envpath, L"NVM_GUI_SYMLINK", m_node_path);
-                add_regval(HKEY_LOCAL_MACHINE, envpath, L"PATH", L"\%NVM_GUI_SYMLINK\%;");
+                // windows bug? Not enabled %NVM_GUI_SYMLINK% 
+                add_regval(HKEY_LOCAL_MACHINE, envpath, L"PATH", L";\%NVM_GUI_SYMLINK\%;C:\\Program Files\\nodejs;");
             }
 
             MessageBox(NULL, TEXT("Please restart Windows"), TEXT("Nvm GUI"), MB_ICONINFORMATION);
@@ -694,11 +695,11 @@ bool Nvm::add_regval(HKEY hKey, std::wstring prntkey, std::wstring keystr, std::
             RegCloseKey(newValue);
             return rflg;
         }
-        valstr += bufstr;
-        DWORD regvalbytes = valstr.size() * sizeof(wchar_t);
-        if (RegSetValueEx(newValue, keystr.c_str(), 0, REG_SZ, (LPBYTE)valstr.c_str(), regvalbytes) == ERROR_SUCCESS) {
+        bufstr += valstr;
+        DWORD regvalbytes = bufstr.size() * sizeof(wchar_t);
+        if (RegSetValueEx(newValue, keystr.c_str(), 0, REG_SZ, (LPBYTE)bufstr.c_str(), regvalbytes) == ERROR_SUCCESS) {
             rflg = TRUE;
-            BOOL bRet = SetEnvironmentVariable(keystr.c_str(), valstr.c_str());
+            BOOL bRet = SetEnvironmentVariable(keystr.c_str(), bufstr.c_str());
         }
     }
     RegCloseKey(newValue);
